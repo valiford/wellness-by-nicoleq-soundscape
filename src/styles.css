@@ -1,0 +1,29 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #352f2b; background: #f4f0ea; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, select, input { font: inherit; }
+main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0 32px; }
+header { margin-bottom: 28px; }
+.eyebrow, .source { text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; font-weight: 750; color: #786f67; margin: 0 0 8px; }
+h1 { font-family: Georgia, serif; font-size: clamp(2.3rem, 5vw, 4.5rem); font-weight: 500; margin: 0; }
+.lede { font-size: 1.05rem; color: #635b55; }
+.toolbar, .master, .channel { background: rgba(255,255,255,.74); border: 1px solid #ded5cb; border-radius: 18px; box-shadow: 0 16px 42px rgba(73,58,45,.07); }
+.toolbar { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; padding: 18px; }
+.toolbar label { display: grid; gap: 7px; font-size: .82rem; font-weight: 700; margin-right: auto; }
+select, button { min-height: 44px; border-radius: 10px; border: 1px solid #cfc4b8; padding: 0 16px; background: #fff; color: #352f2b; }
+button { cursor: pointer; font-weight: 750; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: #51433d; color: white; border-color: #51433d; }
+button.danger { color: #8a2e2e; }
+.master { margin: 16px 0; padding: 18px; display: grid; grid-template-columns: minmax(250px, 1fr) auto; gap: 24px; align-items: center; }
+.master label, .control { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; font-size: .86rem; font-weight: 650; }
+.master input, .control input { grid-column: 1 / -1; width: 100%; accent-color: #66534a; }
+.status { margin: 0; color: #6c635d; font-size: .84rem; }
+.channels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.channel { padding: 20px; }
+.channel-heading { display: flex; justify-content: space-between; gap: 16px; align-items: start; margin-bottom: 24px; }
+.channel h2 { margin: 0; font-family: Georgia, serif; font-size: 1.6rem; font-weight: 500; }
+.switch { display: flex; gap: 7px; align-items: center; font-size: .82rem; font-weight: 700; }
+.control { margin: 18px 0; color: #57504b; }
+footer { padding: 24px 4px 0; color: #756c65; font-size: .78rem; }
+@media (max-width: 760px) { main { padding-top: 28px; } .channels { grid-template-columns: 1fr; } .master { grid-template-columns: 1fr; } .toolbar { align-items: stretch; } .toolbar label { width: 100%; } button { flex: 1; } }
