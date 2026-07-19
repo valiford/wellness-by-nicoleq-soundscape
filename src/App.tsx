@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AudioEngine, ChannelSettings, NoiseKind } from './audioEngine';
 
 type Channel = ChannelSettings & {
@@ -33,6 +33,8 @@ const getStoredMode = (): PresentationMode => {
 
 export default function App() {
   const engine = useMemo(() => new AudioEngine(), []);
+  const fadeTimeoutRef = useRef<number | null>(null);
+  const lastNonZeroMasterRef = useRef(0.45);
   const [started, setStarted] = useState(false);
   const [channels, setChannels] = useState<Channel[]>(defaults);
   const [master, setMaster] = useState(0.45);
@@ -40,7 +42,16 @@ export default function App() {
   const [mode, setMode] = useState<PresentationMode>(getStoredMode);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>('Stopped');
 
-  useEffect(() => () => engine.stopAll(), [engine]);
+  const cancelFadeTimeout = () => {
+    if (fadeTimeoutRef.current === null) return;
+    window.clearTimeout(fadeTimeoutRef.current);
+    fadeTimeoutRef.current = null;
+  };
+
+  useEffect(() => () => {
+    cancelFadeTimeout();
+    engine.stopAll();
+  }, [engine]);
 
   useEffect(() => {
     window.localStorage.setItem(modeStorageKey, mode);
@@ -73,23 +84,47 @@ export default function App() {
   };
 
   const stop = () => {
+    cancelFadeTimeout();
     engine.stopAll();
     setStarted(false);
     setSessionStatus('Stopped');
   };
 
   const setMasterVolume = (value: number) => {
+    cancelFadeTimeout();
     setMaster(value);
+    if (value > 0) lastNonZeroMasterRef.current = value;
     engine.setMasterVolume(value);
     if (started) setSessionStatus(value === 0 ? 'Muted' : 'Active');
   };
 
-  const fadeMaster = (target: number, seconds: number) => {
+  const muteAll = () => {
+    cancelFadeTimeout();
+    setMaster(0);
+    engine.setMasterVolume(0);
+    if (started) setSessionStatus('Muted');
+  };
+
+  const fadeMaster = (target: number, seconds: number, completedStatus: SessionStatus) => {
+    cancelFadeTimeout();
     engine.fadeMaster(target, seconds);
     setSessionStatus('Fading');
-    window.setTimeout(() => {
-      setSessionStatus(target === 0 ? 'Muted' : 'Active');
+    fadeTimeoutRef.current = window.setTimeout(() => {
+      fadeTimeoutRef.current = null;
+      setMaster(target);
+      if (target > 0) lastNonZeroMasterRef.current = target;
+      engine.setMasterVolume(target);
+      setSessionStatus(completedStatus);
     }, seconds * 1000);
+  };
+
+  const fadeOut = () => {
+    fadeMaster(0, 6, 'Muted');
+  };
+
+  const fadeIn = () => {
+    const target = lastNonZeroMasterRef.current || 0.45;
+    fadeMaster(target, 4, 'Active');
   };
 
   const activeChannels = channels.filter(channel => channel.enabled).length;
@@ -106,9 +141,9 @@ export default function App() {
         onPresetChange={selectPreset}
         onStart={start}
         onStop={stop}
-        onFadeIn={() => fadeMaster(master, 4)}
-        onFadeOut={() => fadeMaster(0, 6)}
-        onMute={() => setMasterVolume(0)}
+        onFadeIn={fadeIn}
+        onFadeOut={fadeOut}
+        onMute={muteAll}
       />
 
       <MasterControl
