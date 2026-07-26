@@ -5,15 +5,21 @@ const baseUrl = 'http://127.0.0.1:5174';
 
 const samples = [
   '/audio/bowls/root-regular-strike.wav',
-  '/audio/bowls/root-hard-strike.wav',
   '/audio/bowls/root-amplified-rim.wav',
+  '/audio/bowls/root-hard-strike.wav',
   '/audio/bowls/heart-regular-strike.wav',
-  '/audio/bowls/heart-hard-strike.wav',
   '/audio/bowls/heart-amplified-rim.wav',
+  '/audio/bowls/heart-hard-strike.wav',
   '/audio/bowls/crown-regular-strike.wav',
-  '/audio/bowls/crown-hard-strike.wav',
   '/audio/bowls/crown-amplified-rim.wav',
+  '/audio/bowls/crown-hard-strike.wav',
 ];
+
+const expectedDefaultVolumes = {
+  'Root Bowl - Regular Strike': '24%',
+  'Heart Bowl - Amplified Rim': '20%',
+  'Crown Bowl - Hard Strike': '15%',
+};
 
 const server = spawn(
   'npm run dev -- --host 127.0.0.1 --port 5174',
@@ -79,6 +85,7 @@ try {
   await page.goto(baseUrl, { waitUntil: 'networkidle' });
   assert(await page.locator('.bowl-player h2').innerText() === 'Bowls', 'Expected bowl player heading.');
   assert(await page.locator('.strike-button').count() === 9, 'Expected nine bowl strike buttons.');
+  assert(samples.length === 9, 'Expected exactly nine manifest paths.');
 
   const sampleStatuses = await Promise.all(samples.map(async url => {
     const response = await page.evaluate(sampleUrl => fetch(sampleUrl).then(result => result.status), url);
@@ -95,6 +102,11 @@ try {
   await page.getByRole('button', { name: 'Play Crown Bowl - Hard Strike' }).click();
   await page.waitForFunction(() => document.querySelectorAll('.active-sample').length === 3, null, { timeout: 2_000 });
 
+  for (const [label, volume] of Object.entries(expectedDefaultVolumes)) {
+    const card = page.locator('.active-sample').filter({ hasText: label });
+    assert(await card.innerText().then(text => text.includes(volume)), `Expected ${label} to start at ${volume}.`);
+  }
+
   await page.locator('.active-sample').first().getByRole('button', { name: 'Stop' }).click();
   await page.waitForFunction(() => document.querySelectorAll('.active-sample').length === 2, null, { timeout: 2_000 });
 
@@ -104,9 +116,18 @@ try {
   await page.locator('.active-sample').first().getByRole('button', { name: 'Mute' }).click();
   assert(await page.locator('.active-sample').first().innerText().then(text => text.includes('Muted')), 'Expected per-sample mute state.');
 
+  await page.locator('.master-slider input').evaluate(input => {
+    const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    valueSetter?.call(input, '0.18');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  assert(await page.locator('.master-slider input').inputValue() === '0.18', 'Expected master slider to update while bowl sample is active.');
+
   await page.getByRole('button', { name: 'Mute all' }).click();
   assert(await page.locator('.live-status').innerText().then(text => text.trim()) === 'Muted', 'Expected global Mute All to set session status to Muted.');
   assert(await page.locator('.master-slider input').inputValue() === '0', 'Expected global Mute All to silence the master output.');
+  assert(await page.locator('.active-sample').first().innerText().then(text => text.includes('Muted')), 'Expected global Mute All to mute active bowl samples.');
 
   for (const width of [1440, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 1100 });

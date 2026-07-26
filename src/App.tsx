@@ -136,6 +136,7 @@ export default function App() {
     cancelFadeTimeout();
     setMaster(0);
     engine.setMasterVolume(0);
+    setActiveSamples(bowlPlayer.muteAll());
     if (started) setSessionStatus('Muted');
   };
 
@@ -316,13 +317,13 @@ function BowlPlayer({
           <p>{statusCopy}</p>
           <p className="bowl-note">Hz values are traditional associations used for organization, not measured acoustic frequencies.</p>
         </div>
-        <div className={`sample-status ${sampleStatus.toLowerCase()}`} aria-live="polite">
+        <div className={`sample-status ${sampleStatus.toLowerCase()}`} role="status" aria-atomic="true" aria-live="polite">
           <span aria-hidden="true" />
           {sampleStatus}
         </div>
       </div>
 
-      {sampleError && <p className="sample-error" role="alert">{sampleError}</p>}
+      {sampleError && <p className="sample-error" role="alert" aria-live="assertive">{sampleError}</p>}
 
       <div className="bowl-grid">
         {bowlDefinitions.map(bowl => (

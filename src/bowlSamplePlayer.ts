@@ -176,6 +176,19 @@ export class BowlSamplePlayer {
     return this.snapshot(id);
   }
 
+  muteAll() {
+    const snapshots: SamplePlaybackSnapshot[] = [];
+    this.playbacks.forEach(playback => {
+      playback.muted = true;
+      playback.fading = false;
+      playback.gain.gain.cancelScheduledValues(playback.gain.context.currentTime);
+      playback.gain.gain.value = 0;
+      const snapshot = this.snapshot(playback.id);
+      if (snapshot) snapshots.push(snapshot);
+    });
+    return snapshots;
+  }
+
   stopAll() {
     Array.from(this.playbacks.keys()).forEach(id => this.stop(id));
     this.playbacks.clear();
