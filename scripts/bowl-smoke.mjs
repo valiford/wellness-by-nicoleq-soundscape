@@ -16,9 +16,9 @@ const samples = [
 ];
 
 const expectedDefaultVolumes = {
-  'Root Bowl - Regular Strike': '24%',
-  'Heart Bowl - Amplified Rim': '20%',
-  'Crown Bowl - Hard Strike': '15%',
+  'Root Bowl - Regular Strike': '65%',
+  'Heart Bowl - Amplified Rim': '60%',
+  'Crown Bowl - Hard Strike': '45%',
 };
 
 const server = spawn(
