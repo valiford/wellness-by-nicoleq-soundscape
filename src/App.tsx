@@ -37,6 +37,8 @@ export default function App() {
   const bowlPlayer = useMemo(() => new BowlSamplePlayer(() => engine.getSampleDestination(master)), [engine]);
   const fadeTimeoutRef = useRef<number | null>(null);
   const lastNonZeroMasterRef = useRef(initialPreset.masterVolume);
+  const facilitatorChannelsRef = useRef<PresetChannel[] | null>(null);
+  const channelsRef = useRef<PresetChannel[]>(initialPreset.channels);
   const [started, setStarted] = useState(false);
   const [channels, setChannels] = useState<PresetChannel[]>(initialPreset.channels);
   const [master, setMaster] = useState(initialPreset.masterVolume);
@@ -53,6 +55,10 @@ export default function App() {
   const [sampleError, setSampleError] = useState('');
   const [activeSamples, setActiveSamples] = useState<SamplePlaybackSnapshot[]>([]);
   const [announcement, setAnnouncement] = useState('');
+
+  useEffect(() => {
+    channelsRef.current = channels;
+  }, [channels]);
 
   const cancelFadeTimeout = () => {
     if (fadeTimeoutRef.current === null) return;
@@ -94,6 +100,7 @@ export default function App() {
   }, [bowlPlayer, started]);
 
   const applySessionPreset = useCallback((next: SessionPreset) => {
+    channelsRef.current = next.channels;
     setChannels(next.channels);
     setMaster(next.masterVolume);
     setReverbAmount(next.reverbAmount);
@@ -114,17 +121,22 @@ export default function App() {
     setChannels(current => current.map(channel => {
       if (channel.id !== id) return channel;
       const updated = { ...channel, ...patch };
+      channelsRef.current = current.map(item => item.id === id ? updated : item);
       if (started) engine.updateChannel(id, updated);
       return updated;
     }));
   };
 
-  const start = async () => {
-    await engine.start(master);
-    channels.forEach(channel => {
+  const startGeneratedChannels = (channelSettings: PresetChannel[]) => {
+    channelSettings.filter(channel => channel.enabled).forEach(channel => {
       if (channel.source === 'tone') engine.addTone(channel.id, 'sine', channel);
       else engine.addNoise(channel.id, channel.source, channel);
     });
+  };
+
+  const start = async () => {
+    await engine.start(master);
+    startGeneratedChannels(channels);
     setStarted(true);
     setSessionStatus(master === 0 ? 'Muted' : 'Active');
     setAnnouncement('Audio started.');
@@ -249,6 +261,34 @@ export default function App() {
     setBowlDefaults(current => ({ ...current, ...patch, styleGains: patch.styleGains ?? current.styleGains }));
   };
 
+  const changeClientMode = (mode: ClientMode) => {
+    if (mode === 'experience' && clientMode !== 'experience') {
+      facilitatorChannelsRef.current = channelsRef.current.map(channel => ({ ...channel }));
+      engine.stopAll();
+      setChannels(current => current.map(channel => ({ ...channel, enabled: false })));
+      setAnnouncement('Experience Mode keeps generated channels off.');
+    } else if (mode === 'facilitator' && clientMode === 'experience') {
+      const restoredChannels = facilitatorChannelsRef.current;
+      if (restoredChannels) {
+        setChannels(restoredChannels);
+        if (started) startGeneratedChannels(restoredChannels);
+        facilitatorChannelsRef.current = null;
+      }
+    }
+    setClientMode(mode);
+  };
+
+  useEffect(() => {
+    if (clientMode !== 'experience') return;
+    if (facilitatorChannelsRef.current === null) {
+      facilitatorChannelsRef.current = channelsRef.current.map(channel => ({ ...channel }));
+    }
+    engine.stopAll();
+    setChannels(current => current.every(channel => !channel.enabled)
+      ? current
+      : current.map(channel => ({ ...channel, enabled: false })));
+  }, [clientMode, engine]);
+
   const {
     runner,
     sequenceSnapshot,
@@ -326,15 +366,18 @@ export default function App() {
 
       <div className="announcer" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
 
-      <ModeToggle clientMode={clientMode} detailMode={detailMode} onClientModeChange={setClientMode} onDetailModeChange={setDetailMode} />
+      <ModeToggle clientMode={clientMode} detailMode={detailMode} onClientModeChange={changeClientMode} onDetailModeChange={setDetailMode} />
 
       {clientMode === 'experience' ? (
         <ExperienceMode
           started={started}
           master={master}
+          analyser={engine.getAnalyser()}
           activeSamples={activeSamples}
           onPlay={playBowl}
           onVolumeChange={updateExperienceVolume}
+          onMute={toggleBowlMute}
+          onStop={stopBowl}
         />
       ) : <>
       <PresetPanel

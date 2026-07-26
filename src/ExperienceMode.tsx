@@ -1,25 +1,40 @@
-import { useMemo, useRef, useState } from 'react';
-import { BowlId, BowlStyleId, bowlSamples, bowlStyles } from './bowlSamplePlayer';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { BowlId, BowlStyleId, bowlDefinitions, bowlSamples, bowlStyles } from './bowlSamplePlayer';
 import { activeExperienceChakras, ExperienceChakra, experienceChakras } from './experienceGeometry';
+import AudioReactiveSpiral from './AudioReactiveSpiral';
 
 type ExperienceModeProps = {
   started: boolean;
   master: number;
-  activeSamples: { sampleId: string; volume: number; muted: boolean }[];
+  analyser: AnalyserNode | null;
+  activeSamples: { id: string; sampleId: string; volume: number; muted: boolean; fading?: boolean }[];
   onPlay: (sampleId: string, volumeOverride?: number) => void;
   onVolumeChange: (chakraId: BowlId, volume: number) => void;
+  onMute: (id: string, muted: boolean) => void;
+  onStop: (id: string) => void;
 };
 
 const defaultVolumes: Record<BowlId, number> = { crown: 0.62, heart: 0.58, root: 0.54 };
 
-export default function ExperienceMode({ started, master, activeSamples, onPlay, onVolumeChange }: ExperienceModeProps) {
+export default function ExperienceMode({ started, master, analyser, activeSamples, onPlay, onVolumeChange, onMute, onStop }: ExperienceModeProps) {
   const [selectedId, setSelectedId] = useState<BowlId>('heart');
   const [volumes, setVolumes] = useState<Record<BowlId, number>>(defaultVolumes);
   const dragRef = useRef<{ chakraId: BowlId } | null>(null);
+  const geometryFieldRef = useRef<HTMLDivElement | null>(null);
+  const [geometryWidth, setGeometryWidth] = useState(790);
   const selected = experienceChakras.find(chakra => chakra.id === selectedId) ?? experienceChakras[3];
   const activePlayback = activeSamples.find(sample => sample.sampleId.startsWith(`${selectedId}-`));
-  const fieldWidth = typeof window === 'undefined' ? 790 : Math.min(790, Math.max(320, window.innerWidth - 60));
-  const maxNodeRadius = fieldWidth * 0.46;
+  const maxNodeRadius = geometryWidth * 0.46;
+
+  useEffect(() => {
+    const field = geometryFieldRef.current;
+    if (!field) return;
+    const updateSize = () => setGeometryWidth(field.getBoundingClientRect().width);
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(field);
+    return () => observer.disconnect();
+  }, []);
 
   const setVolume = (chakraId: BowlId, value: number) => {
     const next = Math.max(0.08, Math.min(1, value));
@@ -60,6 +75,9 @@ export default function ExperienceMode({ started, master, activeSamples, onPlay,
   };
 
   const selectedVolume = volumes[selectedId];
+  const selectedAssociation = selected.active
+    ? bowlDefinitions.find(bowl => bowl.id === selectedId)?.association
+    : undefined;
   const bowlTiles = useMemo(() => experienceChakras.map(chakra => ({
     chakra,
     samples: chakra.active ? bowlStyles.map(style => bowlSamples.find(sample => sample.bowlId === chakra.id && sample.styleId === style.id)) : [],
@@ -80,12 +98,38 @@ export default function ExperienceMode({ started, master, activeSamples, onPlay,
       </div>
 
       <div className="experience-canvas" onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}>
-        <div className="geometry-field" aria-label="Seven chakra positions">
-          <div className="geometry-ring ring-outer" />
-          <div className="geometry-ring ring-middle" />
-          <div className="geometry-ring ring-inner" />
-          <div className="radial-paths" aria-hidden="true" />
-          <div className="spiral-core" aria-hidden="true"><span /></div>
+        <div className="experience-visual-layout">
+          <aside className="experience-control-panel" aria-live="polite">
+            <p className="eyebrow" style={{ color: selected.color }}>Selected chakra</p>
+            <h3>{selected.name}</h3>
+            {selectedAssociation && <p className="chakra-association">{selectedAssociation}</p>}
+            <p className="core-status">{selected.active ? `${Math.round(selectedVolume * 100)}% volume` : 'Coming soon'}</p>
+            {selected.active && <>
+              <label className="core-volume">
+                <span>Volume</span><strong>{Math.round(selectedVolume * 100)}%</strong>
+                <input aria-label={`${selected.name} volume`} type="range" min="0.08" max="1" step="0.01" value={selectedVolume} onChange={event => setVolume(selectedId, Number(event.target.value))} />
+              </label>
+              <div className="core-actions" aria-label={`${selected.name} bowl controls`}>
+                {bowlStyles.map(style => {
+                  const sampleId = `${selectedId}-${style.id}`;
+                  return <button key={style.id} disabled={!started} onClick={() => onPlay(sampleId, selectedVolume)}>{style.name}</button>;
+                })}
+              </div>
+              {activePlayback && <div className="core-playback-actions">
+                <button onClick={() => onMute(activePlayback.id, !activePlayback.muted)}>{activePlayback.muted ? 'Unmute bowl' : 'Mute bowl'}</button>
+                <button className="stop" onClick={() => onStop(activePlayback.id)}>Stop bowl</button>
+              </div>}
+              <p className="core-playback">{activePlayback?.muted ? 'Muted during playback' : activePlayback ? 'Bowl is sounding' : started ? 'Ready when you are' : 'Audio is not started'}</p>
+            </>}
+          </aside>
+
+          <div ref={geometryFieldRef} className="geometry-field" aria-label="Seven chakra positions">
+            <div className="geometry-ring ring-outer" />
+            <div className="geometry-ring ring-middle" />
+            <div className="geometry-ring ring-inner" />
+            <div className="radial-paths" aria-hidden="true" />
+            <AudioReactiveSpiral analyser={analyser} color={selected.color} />
+            <div className="spiral-core" aria-hidden="true"><span /></div>
 
           {experienceChakras.map(chakra => {
             const isSelected = chakra.id === selectedId;
@@ -109,23 +153,6 @@ export default function ExperienceMode({ started, master, activeSamples, onPlay,
             );
           })}
 
-          <div className="experience-core-panel" aria-live="polite">
-            <p className="eyebrow" style={{ color: selected.color }}>Selected chakra</p>
-            <h3>{selected.name}</h3>
-            <p className="core-status">{selected.active ? 'Active in Phase A' : 'Coming soon'}</p>
-            {selected.active && <>
-              <label className="core-volume">
-                <span>Volume</span><strong>{Math.round(selectedVolume * 100)}%</strong>
-                <input aria-label={`${selected.name} volume`} type="range" min="0.08" max="1" step="0.01" value={selectedVolume} onChange={event => setVolume(selectedId, Number(event.target.value))} />
-              </label>
-              <div className="core-actions" aria-label={`${selected.name} bowl controls`}>
-                {bowlStyles.map(style => {
-                  const sampleId = `${selectedId}-${style.id}`;
-                  return <button key={style.id} disabled={!started} onClick={() => onPlay(sampleId, selectedVolume)}>{style.name}</button>;
-                })}
-              </div>
-              <p className="core-playback">{activePlayback?.muted ? 'Muted during playback' : activePlayback ? 'Bowl is sounding' : started ? 'Ready when you are' : 'Audio is not started'}</p>
-            </>}
           </div>
         </div>
         <p className="geometry-caption">Move an active node toward the center for a quieter presence, or outward for more presence.</p>

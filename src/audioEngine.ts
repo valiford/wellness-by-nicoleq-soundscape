@@ -19,6 +19,7 @@ type ChannelNodes = {
 export class AudioEngine {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
+  private analyser: AnalyserNode | null = null;
   private convolver: ConvolverNode | null = null;
   private channels = new Map<string, ChannelNodes>();
 
@@ -27,7 +28,11 @@ export class AudioEngine {
       this.context = new AudioContext();
       this.master = this.context.createGain();
       this.master.gain.value = masterVolume;
-      this.master.connect(this.context.destination);
+      this.analyser = this.context.createAnalyser();
+      this.analyser.fftSize = 256;
+      this.analyser.smoothingTimeConstant = 0.82;
+      this.master.connect(this.analyser);
+      this.analyser.connect(this.context.destination);
       this.convolver = this.context.createConvolver();
       this.convolver.buffer = this.createImpulseResponse(2.2, 2.4);
       this.convolver.connect(this.master);
@@ -79,6 +84,10 @@ export class AudioEngine {
     await this.start(masterVolume);
     if (!this.context || !this.master || !this.convolver) return null;
     return { context: this.context, master: this.master, convolver: this.convolver };
+  }
+
+  getAnalyser() {
+    return this.analyser;
   }
 
   updateChannel(id: string, settings: ChannelSettings) {
