@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AudioEngine, ChannelSettings, NoiseKind } from './audioEngine';
+import { BowlSamplePlayer, SamplePlaybackSnapshot, bowlDefinitions, bowlSamples, bowlStyles } from './bowlSamplePlayer';
 
 type Channel = ChannelSettings & {
   id: string;
@@ -9,6 +10,7 @@ type Channel = ChannelSettings & {
 
 type PresentationMode = 'simple' | 'advanced';
 type SessionStatus = 'Stopped' | 'Active' | 'Fading' | 'Muted';
+type SampleStatus = 'Idle' | 'Loading' | 'Ready' | 'Error';
 
 const modeStorageKey = 'wbn-soundscape-presentation-mode';
 
@@ -33,6 +35,7 @@ const getStoredMode = (): PresentationMode => {
 
 export default function App() {
   const engine = useMemo(() => new AudioEngine(), []);
+  const bowlPlayer = useMemo(() => new BowlSamplePlayer(() => engine.getSampleDestination(master)), [engine]);
   const fadeTimeoutRef = useRef<number | null>(null);
   const lastNonZeroMasterRef = useRef(0.45);
   const [started, setStarted] = useState(false);
@@ -41,6 +44,9 @@ export default function App() {
   const [preset, setPreset] = useState('Grounding');
   const [mode, setMode] = useState<PresentationMode>(getStoredMode);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>('Stopped');
+  const [sampleStatus, setSampleStatus] = useState<SampleStatus>('Idle');
+  const [sampleError, setSampleError] = useState('');
+  const [activeSamples, setActiveSamples] = useState<SamplePlaybackSnapshot[]>([]);
 
   const cancelFadeTimeout = () => {
     if (fadeTimeoutRef.current === null) return;
@@ -51,11 +57,37 @@ export default function App() {
   useEffect(() => () => {
     cancelFadeTimeout();
     engine.stopAll();
-  }, [engine]);
+    bowlPlayer.stopAll();
+  }, [bowlPlayer, engine]);
 
   useEffect(() => {
     window.localStorage.setItem(modeStorageKey, mode);
   }, [mode]);
+
+  useEffect(() => {
+    if (!started) {
+      setSampleStatus('Idle');
+      return;
+    }
+
+    let cancelled = false;
+    setSampleStatus('Loading');
+    setSampleError('');
+    bowlPlayer.preload()
+      .then(() => {
+        if (!cancelled) setSampleStatus('Ready');
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSampleStatus('Error');
+          setSampleError('One or more bowl files could not load. Please check the audio folder before using bowls in-session.');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [bowlPlayer, started]);
 
   const start = async () => {
     await engine.start(master);
@@ -86,6 +118,8 @@ export default function App() {
   const stop = () => {
     cancelFadeTimeout();
     engine.stopAll();
+    bowlPlayer.stopAll();
+    setActiveSamples([]);
     setStarted(false);
     setSessionStatus('Stopped');
   };
@@ -102,6 +136,7 @@ export default function App() {
     cancelFadeTimeout();
     setMaster(0);
     engine.setMasterVolume(0);
+    setActiveSamples(bowlPlayer.muteAll());
     if (started) setSessionStatus('Muted');
   };
 
@@ -125,6 +160,55 @@ export default function App() {
   const fadeIn = () => {
     const target = lastNonZeroMasterRef.current || 0.45;
     fadeMaster(target, 4, 'Active');
+  };
+
+  const removeActiveSample = (id: string) => {
+    setActiveSamples(current => current.filter(sample => sample.id !== id));
+  };
+
+  const replaceActiveSample = (snapshot: SamplePlaybackSnapshot | null) => {
+    if (!snapshot) return;
+    setActiveSamples(current => current.map(sample => sample.id === snapshot.id ? snapshot : sample));
+  };
+
+  const playBowl = async (sampleId: string) => {
+    const sample = bowlSamples.find(item => item.id === sampleId);
+    if (!sample || !started) return;
+    try {
+      const playback = await bowlPlayer.play(sample, removeActiveSample);
+      if (playback) setActiveSamples(current => [playback, ...current]);
+      setSampleStatus('Ready');
+      setSampleError('');
+    } catch {
+      setSampleStatus('Error');
+      setSampleError('That bowl file could not load. Please check the audio folder before using this sample in-session.');
+    }
+  };
+
+  const updateBowlVolume = (id: string, volume: number) => {
+    replaceActiveSample(bowlPlayer.setVolume(id, volume));
+  };
+
+  const toggleBowlMute = (id: string, muted: boolean) => {
+    replaceActiveSample(bowlPlayer.setMuted(id, muted));
+  };
+
+  const stopBowl = (id: string) => {
+    bowlPlayer.stop(id);
+    removeActiveSample(id);
+  };
+
+  const fadeBowl = (id: string) => {
+    replaceActiveSample(bowlPlayer.fadeOut(id));
+  };
+
+  const stopAllBowls = () => {
+    bowlPlayer.stopAll();
+    setActiveSamples([]);
+  };
+
+  const fadeAllBowls = () => {
+    activeSamples.forEach(sample => replaceActiveSample(bowlPlayer.fadeOut(sample.id)));
   };
 
   const activeChannels = channels.filter(channel => channel.enabled).length;
@@ -154,6 +238,20 @@ export default function App() {
         onChange={setMasterVolume}
       />
 
+      <BowlPlayer
+        activeSamples={activeSamples}
+        sampleStatus={sampleStatus}
+        sampleError={sampleError}
+        started={started}
+        onPlay={playBowl}
+        onVolumeChange={updateBowlVolume}
+        onMuteChange={toggleBowlMute}
+        onStop={stopBowl}
+        onFadeOut={fadeBowl}
+        onStopAll={stopAllBowls}
+        onFadeAll={fadeAllBowls}
+      />
+
       <ModeToggle mode={mode} onChange={setMode} />
 
       <section className="channels" aria-label="Sound channels">
@@ -172,6 +270,119 @@ export default function App() {
         <p>Designed to support relaxation and guided wellness sessions. Not medical or audiological treatment.</p>
       </footer>
     </main>
+  );
+}
+
+function BowlPlayer({
+  activeSamples,
+  sampleStatus,
+  sampleError,
+  started,
+  onPlay,
+  onVolumeChange,
+  onMuteChange,
+  onStop,
+  onFadeOut,
+  onStopAll,
+  onFadeAll,
+}: {
+  activeSamples: SamplePlaybackSnapshot[];
+  sampleStatus: SampleStatus;
+  sampleError: string;
+  started: boolean;
+  onPlay: (sampleId: string) => void;
+  onVolumeChange: (id: string, value: number) => void;
+  onMuteChange: (id: string, muted: boolean) => void;
+  onStop: (id: string) => void;
+  onFadeOut: (id: string) => void;
+  onStopAll: () => void;
+  onFadeAll: () => void;
+}) {
+  const statusCopy = !started
+    ? 'Start audio to arm bowls'
+    : sampleStatus === 'Loading'
+      ? 'Loading bowl samples'
+      : sampleStatus === 'Error'
+        ? 'Bowl sample needs attention'
+        : activeSamples.length > 0
+          ? `${activeSamples.length} active bowl sample${activeSamples.length === 1 ? '' : 's'}`
+          : 'Bowls ready';
+
+  return (
+    <section className="bowl-player" aria-label="Bowls">
+      <div className="bowl-heading">
+        <div>
+          <p className="eyebrow">Sample player</p>
+          <h2>Bowls</h2>
+          <p>{statusCopy}</p>
+          <p className="bowl-note">Hz values are traditional associations used for organization, not measured acoustic frequencies.</p>
+        </div>
+        <div className={`sample-status ${sampleStatus.toLowerCase()}`} role="status" aria-atomic="true" aria-live="polite">
+          <span aria-hidden="true" />
+          {sampleStatus}
+        </div>
+      </div>
+
+      {sampleError && <p className="sample-error" role="alert" aria-live="assertive">{sampleError}</p>}
+
+      <div className="bowl-grid">
+        {bowlDefinitions.map(bowl => (
+          <article className="bowl-card" key={bowl.id}>
+            <div>
+              <h3>{bowl.name}</h3>
+              <p>{bowl.association}</p>
+            </div>
+            <div className="strike-row" aria-label={`${bowl.name} strikes`}>
+              {bowlStyles.map(style => {
+                const sample = bowlSamples.find(item => item.bowlId === bowl.id && item.styleId === style.id);
+                if (!sample) return null;
+                return (
+                  <button
+                    className="strike-button"
+                    disabled={!started}
+                    key={sample.id}
+                    onClick={() => onPlay(sample.id)}
+                    aria-label={`Play ${sample.label}`}
+                  >
+                    Play {style.name}
+                  </button>
+                );
+              })}
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="active-samples" aria-live="polite">
+        <div className="active-samples-heading">
+          <h3>Active bowls</h3>
+          <div>
+            <button disabled={activeSamples.length === 0} onClick={onFadeAll}>Fade out bowls</button>
+            <button className="stop" disabled={activeSamples.length === 0} onClick={onStopAll}>Stop bowls</button>
+          </div>
+        </div>
+        {activeSamples.length === 0 ? (
+          <p className="empty-active">No bowl samples playing.</p>
+        ) : (
+          <div className="active-sample-list">
+            {activeSamples.map(sample => (
+              <article className={`active-sample ${sample.muted ? 'sample-muted' : ''} ${sample.fading ? 'sample-fading' : ''}`} key={sample.id}>
+                <div className="active-sample-title">
+                  <strong>{sample.label}</strong>
+                  <span>{sample.fading ? 'Fading out' : sample.muted ? 'Muted' : 'Playing'}</span>
+                </div>
+                <Control label="Volume" value={sample.volume} min={0} max={0.55} step={0.01} display={`${Math.round(sample.volume * 100)}%`} onChange={value => onVolumeChange(sample.id, value)} />
+                <div className="active-sample-actions">
+                  <button aria-pressed={sample.muted} onClick={() => onMuteChange(sample.id, !sample.muted)}>{sample.muted ? 'Unmute' : 'Mute'}</button>
+                  <button onClick={() => onFadeOut(sample.id)} disabled={sample.fading}>Fade out</button>
+                  <button className="stop" onClick={() => onStop(sample.id)}>Stop</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 

@@ -75,6 +75,12 @@ export class AudioEngine {
     source.start();
   }
 
+  async getSampleDestination(masterVolume = 0.45) {
+    await this.start(masterVolume);
+    if (!this.context || !this.master || !this.convolver) return null;
+    return { context: this.context, master: this.master, convolver: this.convolver };
+  }
+
   updateChannel(id: string, settings: ChannelSettings) {
     const node = this.channels.get(id);
     if (!node || !this.context) return;
