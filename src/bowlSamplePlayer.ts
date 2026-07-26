@@ -89,7 +89,7 @@ export class BowlSamplePlayer {
     this.buffers.set(sample.id, buffer);
   }
 
-  async play(sample: BowlSample, onEnded: (id: string) => void) {
+  async play(sample: BowlSample, onEnded: (id: string) => void, volume = sample.defaultVolume) {
     await this.load(sample);
     const destination = await this.getDestination();
     const buffer = this.buffers.get(sample.id);
@@ -106,7 +106,7 @@ export class BowlSamplePlayer {
     source.buffer = buffer;
     source.loop = false;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(sample.defaultVolume, now + 0.02);
+    gain.gain.linearRampToValueAtTime(volume, now + 0.02);
     dry.gain.value = 0.54;
     wet.gain.value = 0.46;
 
@@ -120,7 +120,7 @@ export class BowlSamplePlayer {
       id,
       sampleId: sample.id,
       label: sample.label,
-      volume: sample.defaultVolume,
+      volume,
       muted: false,
       fading: false,
       source,
