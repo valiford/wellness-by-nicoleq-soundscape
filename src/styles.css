@@ -933,8 +933,8 @@ h1 {
 .chakra-node.selected { box-shadow: 0 0 0 4px #fffdf9, 0 0 0 8px var(--chakra-color), 0 8px 18px rgba(67, 56, 75, .18); }
 .chakra-node.inactive { cursor: not-allowed; opacity: .72; filter: saturate(.64); }
 .chakra-node-dot { width: 13px; height: 13px; border-radius: 50%; background: var(--chakra-color); }
-.chakra-node-label { position: absolute; top: calc(100% + 7px); width: 100px; font-size: .73rem; font-weight: 800; }
-.chakra-node small { position: absolute; top: calc(100% + 25px); width: 120px; color: #726977; font-size: .63rem; font-weight: 700; }
+.chakra-node-label { position: absolute; top: calc(100% + 7px); width: 100px; font-size: .73rem; font-weight: 800; pointer-events: none; }
+.chakra-node small { position: absolute; top: calc(100% + 25px); width: 120px; color: #726977; font-size: .63rem; font-weight: 700; pointer-events: none; }
 
 .core-status, .core-playback { margin: 3px 0 0; color: #6b6370; font-size: .78rem; font-weight: 700; }
 .core-volume { display: grid; grid-template-columns: 1fr auto; width: 100%; gap: 4px 10px; margin-top: 10px; color: #665d6b; font-size: .76rem; font-weight: 760; text-align: left; }
