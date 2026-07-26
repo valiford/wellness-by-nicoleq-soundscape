@@ -17,7 +17,11 @@ const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 function stopServer() {
   if (!server.pid || server.killed) return;
   if (process.platform === 'win32') {
-    execFileSync('taskkill', ['/pid', String(server.pid), '/T', '/F'], { stdio: 'ignore' });
+    try {
+      execFileSync('taskkill', ['/pid', String(server.pid), '/T', '/F'], { stdio: 'ignore' });
+    } catch {
+      // The npm wrapper may already have exited after the browser closes.
+    }
     return;
   }
   server.kill('SIGTERM');

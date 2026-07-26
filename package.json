@@ -9,7 +9,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "smoke:fade": "node scripts/fade-smoke.mjs",
     "smoke:bowl": "node scripts/bowl-smoke.mjs",
-    "smoke:presets": "node scripts/presets-smoke.mjs"
+    "smoke:presets": "node scripts/presets-smoke.mjs",
+    "smoke:experience": "node scripts/experience-smoke.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

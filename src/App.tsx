@@ -12,21 +12,23 @@ import {
   presetStorageKey,
 } from './presetManager';
 import { SequenceSnapshot } from './sequenceRunner';
+import ExperienceMode from './ExperienceMode';
 import { initialPreset, initialSequence, useSessionPresets } from './useSessionPresets';
 import { SequenceDraft, emptySequence, stepLabel, useSequenceRunner } from './useSequenceRunner';
 
 type PresentationMode = 'simple' | 'advanced';
+type ClientMode = 'facilitator' | 'experience';
 type SessionStatus = 'Stopped' | 'Active' | 'Fading' | 'Muted';
 type SampleStatus = 'Idle' | 'Loading' | 'Ready' | 'Error';
 
-const modeStorageKey = 'wbn-soundscape-presentation-mode';
+const modeStorageKey = 'wbn-soundscape-client-mode';
 
-const getStoredMode = (): PresentationMode => {
-  if (typeof window === 'undefined') return 'simple';
+const getStoredMode = (): ClientMode => {
+  if (typeof window === 'undefined') return 'facilitator';
   try {
-    return window.localStorage.getItem(modeStorageKey) === 'advanced' ? 'advanced' : 'simple';
+    return window.localStorage.getItem(modeStorageKey) === 'experience' ? 'experience' : 'facilitator';
   } catch {
-    return 'simple';
+    return 'facilitator';
   }
 };
 
@@ -44,7 +46,8 @@ export default function App() {
   const [bowlDefaults, setBowlDefaults] = useState<BowlPlaybackDefaults>(initialPreset.bowlDefaults);
   const [notes, setNotes] = useState(initialPreset.notes);
   const [sequence, setSequence] = useState<BowlSequence | undefined>(initialSequence);
-  const [mode, setMode] = useState<PresentationMode>(getStoredMode);
+  const [clientMode, setClientMode] = useState<ClientMode>(getStoredMode);
+  const [detailMode, setDetailMode] = useState<PresentationMode>('simple');
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>('Stopped');
   const [sampleStatus, setSampleStatus] = useState<SampleStatus>('Idle');
   const [sampleError, setSampleError] = useState('');
@@ -59,11 +62,11 @@ export default function App() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(modeStorageKey, mode);
+      window.localStorage.setItem(modeStorageKey, clientMode);
     } catch {
       setAnnouncement('Display mode could not be saved in this browser storage.');
     }
-  }, [mode]);
+  }, [clientMode]);
 
   useEffect(() => {
     if (!started) {
@@ -195,11 +198,11 @@ export default function App() {
     return bowlDefaults.styleGains[sample.styleId];
   };
 
-  const playBowl = async (sampleId: string) => {
+  const playBowl = async (sampleId: string, volumeOverride?: number) => {
     const sample = bowlSamples.find(item => item.id === sampleId);
     if (!sample || !started) return;
     try {
-      const playback = await bowlPlayer.play(sample, removeActiveSample, sampleVolume(sampleId));
+      const playback = await bowlPlayer.play(sample, removeActiveSample, volumeOverride ?? sampleVolume(sampleId));
       if (playback) setActiveSamples(current => [playback, ...current]);
       setSampleStatus('Ready');
       setSampleError('');
@@ -207,6 +210,13 @@ export default function App() {
       setSampleStatus('Error');
       setSampleError('That bowl file could not load. Please check the audio folder before using this sample in-session.');
     }
+  };
+
+  const updateExperienceVolume = (bowlId: BowlId, volume: number) => {
+    setActiveSamples(current => current.map(sample => {
+      if (!sample.sampleId.startsWith(`${bowlId}-`)) return sample;
+      return bowlPlayer.setVolume(sample.id, volume) ?? sample;
+    }));
   };
 
   const updateBowlVolume = (id: string, volume: number) => {
@@ -316,6 +326,17 @@ export default function App() {
 
       <div className="announcer" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
 
+      <ModeToggle clientMode={clientMode} detailMode={detailMode} onClientModeChange={setClientMode} onDetailModeChange={setDetailMode} />
+
+      {clientMode === 'experience' ? (
+        <ExperienceMode
+          started={started}
+          master={master}
+          activeSamples={activeSamples}
+          onPlay={playBowl}
+          onVolumeChange={updateExperienceVolume}
+        />
+      ) : <>
       <PresetPanel
         allPresets={allPresets}
         selectedPresetId={selectedPresetId}
@@ -385,14 +406,12 @@ export default function App() {
         onFadeAll={fadeAllBowls}
       />
 
-      <ModeToggle mode={mode} onChange={setMode} />
-
       <section className="channels" aria-label="Sound channels">
         {channels.map(channel => (
           <ChannelCard
             channel={channel}
             key={channel.id}
-            mode={mode}
+            mode={detailMode}
             isActive={started && channel.enabled && master > 0}
             onChange={patch => update(channel.id, patch)}
           />
@@ -409,6 +428,7 @@ export default function App() {
       <footer>
         <p>Designed to support relaxation and guided wellness sessions. Not medical or audiological treatment.</p>
       </footer>
+      </>}
     </main>
   );
 }
@@ -843,16 +863,22 @@ function BowlPlayer({
   );
 }
 
-function ModeToggle({ mode, onChange }: { mode: PresentationMode; onChange: (mode: PresentationMode) => void }) {
+function ModeToggle({ clientMode, detailMode, onClientModeChange, onDetailModeChange }: { clientMode: ClientMode; detailMode: PresentationMode; onClientModeChange: (mode: ClientMode) => void; onDetailModeChange: (mode: PresentationMode) => void }) {
   return (
     <section className="mode-row" aria-label="Presentation mode">
       <div>
-        <p className="eyebrow">Operating view</p>
-        <h2>Channel controls</h2>
+        <p className="eyebrow">Interface</p>
+        <h2>{clientMode === 'experience' ? 'Experience Mode' : 'Facilitator Mode'}</h2>
       </div>
-      <div className="segmented" role="group" aria-label="Choose channel detail level">
-        <button className={mode === 'simple' ? 'selected' : ''} onClick={() => onChange('simple')} aria-pressed={mode === 'simple'}>Simple</button>
-        <button className={mode === 'advanced' ? 'selected' : ''} onClick={() => onChange('advanced')} aria-pressed={mode === 'advanced'}>Advanced</button>
+      <div className="mode-controls">
+        <div className="segmented" role="group" aria-label="Choose interface mode">
+          <button className={clientMode === 'facilitator' ? 'selected' : ''} onClick={() => onClientModeChange('facilitator')} aria-pressed={clientMode === 'facilitator'}>Facilitator Mode</button>
+          <button className={clientMode === 'experience' ? 'selected' : ''} onClick={() => onClientModeChange('experience')} aria-pressed={clientMode === 'experience'}>Experience Mode</button>
+        </div>
+        {clientMode === 'facilitator' && <div className="segmented detail-switch" role="group" aria-label="Choose channel detail level">
+          <button className={detailMode === 'simple' ? 'selected' : ''} onClick={() => onDetailModeChange('simple')} aria-pressed={detailMode === 'simple'}>Simple</button>
+          <button className={detailMode === 'advanced' ? 'selected' : ''} onClick={() => onDetailModeChange('advanced')} aria-pressed={detailMode === 'advanced'}>Advanced</button>
+        </div>}
       </div>
     </section>
   );
