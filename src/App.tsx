@@ -121,7 +121,7 @@ export default function App() {
 
   const start = async () => {
     await engine.start(master);
-    channels.forEach(channel => {
+    channels.filter(channel => channel.enabled).forEach(channel => {
       if (channel.source === 'tone') engine.addTone(channel.id, 'sine', channel);
       else engine.addNoise(channel.id, channel.source, channel);
     });
@@ -249,6 +249,23 @@ export default function App() {
     setBowlDefaults(current => ({ ...current, ...patch, styleGains: patch.styleGains ?? current.styleGains }));
   };
 
+  const changeClientMode = (mode: ClientMode) => {
+    if (mode === 'experience' && clientMode !== 'experience') {
+      engine.stopAll();
+      setChannels(current => current.map(channel => ({ ...channel, enabled: false })));
+      setAnnouncement('Experience Mode keeps generated channels off.');
+    }
+    setClientMode(mode);
+  };
+
+  useEffect(() => {
+    if (clientMode !== 'experience') return;
+    engine.stopAll();
+    setChannels(current => current.every(channel => !channel.enabled)
+      ? current
+      : current.map(channel => ({ ...channel, enabled: false })));
+  }, [clientMode, engine]);
+
   const {
     runner,
     sequenceSnapshot,
@@ -326,15 +343,18 @@ export default function App() {
 
       <div className="announcer" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
 
-      <ModeToggle clientMode={clientMode} detailMode={detailMode} onClientModeChange={setClientMode} onDetailModeChange={setDetailMode} />
+      <ModeToggle clientMode={clientMode} detailMode={detailMode} onClientModeChange={changeClientMode} onDetailModeChange={setDetailMode} />
 
       {clientMode === 'experience' ? (
         <ExperienceMode
           started={started}
           master={master}
+          analyser={engine.getAnalyser()}
           activeSamples={activeSamples}
           onPlay={playBowl}
           onVolumeChange={updateExperienceVolume}
+          onMute={toggleBowlMute}
+          onStop={stopBowl}
         />
       ) : <>
       <PresetPanel
