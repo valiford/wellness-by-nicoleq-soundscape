@@ -15,10 +15,11 @@ const defaultVolumes: Record<BowlId, number> = { crown: 0.62, heart: 0.58, root:
 export default function ExperienceMode({ started, master, activeSamples, onPlay, onVolumeChange }: ExperienceModeProps) {
   const [selectedId, setSelectedId] = useState<BowlId>('heart');
   const [volumes, setVolumes] = useState<Record<BowlId, number>>(defaultVolumes);
-  const dragRef = useRef<{ chakraId: BowlId; originY: number; originVolume: number } | null>(null);
+  const dragRef = useRef<{ chakraId: BowlId } | null>(null);
   const selected = experienceChakras.find(chakra => chakra.id === selectedId) ?? experienceChakras[3];
   const activePlayback = activeSamples.find(sample => sample.sampleId.startsWith(`${selectedId}-`));
-  const maxNodeRadius = typeof window === 'undefined' ? 288 : Math.min(288, window.innerWidth * 0.36);
+  const fieldWidth = typeof window === 'undefined' ? 790 : Math.min(790, Math.max(320, window.innerWidth - 60));
+  const maxNodeRadius = fieldWidth * 0.46;
 
   const setVolume = (chakraId: BowlId, value: number) => {
     const next = Math.max(0.08, Math.min(1, value));
@@ -29,14 +30,25 @@ export default function ExperienceMode({ started, master, activeSamples, onPlay,
   const handlePointerDown = (event: React.PointerEvent, chakra: ExperienceChakra) => {
     if (!chakra.active) return;
     const chakraId = chakra.id as BowlId;
-    dragRef.current = { chakraId, originY: event.clientY, originVolume: volumes[chakraId] };
+    dragRef.current = { chakraId };
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event: React.PointerEvent) => {
     if (!dragRef.current) return;
-    const { chakraId, originY, originVolume } = dragRef.current;
-    setVolume(chakraId, originVolume + (originY - event.clientY) / 260);
+    const { chakraId } = dragRef.current;
+    const field = event.currentTarget.querySelector('.geometry-field');
+    if (!(field instanceof HTMLElement)) return;
+    const bounds = field.getBoundingClientRect();
+    const chakra = experienceChakras.find(item => item.id === chakraId);
+    if (!chakra) return;
+    const angle = chakra.angle * Math.PI / 180;
+    const radialX = Math.sin(angle);
+    const radialY = -Math.cos(angle);
+    const pointerX = event.clientX - (bounds.left + bounds.width / 2);
+    const pointerY = event.clientY - (bounds.top + bounds.height / 2);
+    const projectedRadius = pointerX * radialX + pointerY * radialY;
+    setVolume(chakraId, projectedRadius / maxNodeRadius);
   };
 
   const handlePointerUp = () => {
@@ -82,7 +94,7 @@ export default function ExperienceMode({ started, master, activeSamples, onPlay,
               <button
                 key={chakra.id}
                 className={`chakra-node ${chakra.active ? 'active' : 'inactive'} ${isSelected ? 'selected' : ''}`}
-                style={{ '--chakra-color': chakra.color, '--chakra-angle': `${chakra.angle}deg`, '--chakra-volume': volume ?? 0.45, '--chakra-radius': `${Math.round(Math.min(maxNodeRadius, 138 + (volume ?? 0.45) * 110))}px` } as React.CSSProperties}
+                style={{ '--chakra-color': chakra.color, '--chakra-angle': `${chakra.angle}deg`, '--chakra-volume': volume ?? 0.45, '--chakra-radius': `${Math.round(maxNodeRadius * (volume ?? 0.45))}px` } as React.CSSProperties}
                 onClick={() => select(chakra)}
                 onPointerDown={event => handlePointerDown(event, chakra)}
                 aria-label={`${chakra.name}${chakra.active ? `, volume ${Math.round((volume ?? 0) * 100)} percent` : ', coming soon'}`}
