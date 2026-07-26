@@ -51,9 +51,9 @@ export const bowlDefinitions: BowlDefinition[] = [
 ];
 
 export const bowlStyles: BowlStyle[] = [
-  { id: 'regular-strike', name: 'Regular Strike', defaultVolume: 0.24 },
-  { id: 'amplified-rim', name: 'Amplified Rim', defaultVolume: 0.2 },
-  { id: 'hard-strike', name: 'Hard Strike', defaultVolume: 0.15 },
+  { id: 'regular-strike', name: 'Regular Strike', defaultVolume: 0.65 },
+  { id: 'amplified-rim', name: 'Amplified Rim', defaultVolume: 0.6 },
+  { id: 'hard-strike', name: 'Hard Strike', defaultVolume: 0.45 },
 ];
 
 export const bowlSamples: BowlSample[] = bowlDefinitions.flatMap(bowl => bowlStyles.map(style => ({
