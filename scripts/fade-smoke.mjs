@@ -75,13 +75,13 @@ async function testFadeOutAndIn(browser) {
   const priorLevel = await masterValue(page);
 
   await page.getByRole('button', { name: 'Start audio' }).click();
-  await page.getByRole('button', { name: 'Fade out' }).click();
+  await page.getByRole('button', { name: 'Fade out', exact: true }).click();
   await page.waitForFunction(() => Number(document.querySelector('.master-slider input')?.value) === 0, null, { timeout: 7_000 });
 
   assert(await statusText(page) === 'Muted', 'Fade Out should set status to Muted when complete.');
   assert(await masterValue(page) === 0, 'Fade Out should set displayed master level to 0.');
 
-  await page.getByRole('button', { name: 'Fade in' }).click();
+  await page.getByRole('button', { name: 'Fade in', exact: true }).click();
   await page.waitForFunction(
     expected => Number(document.querySelector('.master-slider input')?.value) === expected,
     priorLevel,
@@ -98,7 +98,7 @@ async function testStopDuringFadeStaysStopped(browser) {
   const { page, errors } = await newConsolePage(browser);
 
   await page.getByRole('button', { name: 'Start audio' }).click();
-  await page.getByRole('button', { name: 'Fade out' }).click();
+  await page.getByRole('button', { name: 'Fade out', exact: true }).click();
   await wait(800);
   await page.getByRole('button', { name: 'Stop audio' }).click();
 
@@ -113,7 +113,7 @@ async function testSliderCancelsPendingFadeStatus(browser) {
   const { page, errors } = await newConsolePage(browser);
 
   await page.getByRole('button', { name: 'Start audio' }).click();
-  await page.getByRole('button', { name: 'Fade out' }).click();
+  await page.getByRole('button', { name: 'Fade out', exact: true }).click();
   await wait(800);
   await setMasterValue(page, 0.3);
 

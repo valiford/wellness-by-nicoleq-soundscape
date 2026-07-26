@@ -115,7 +115,8 @@ main {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   font-family: Georgia, "Times New Roman", serif;
   font-weight: 500;
 }
@@ -146,6 +147,7 @@ h1 {
 
 .session-bar,
 .master,
+.bowl-player,
 .channel,
 .mode-row {
   border: 1px solid color-mix(in srgb, var(--wbnq-border) 92%, transparent);
@@ -275,6 +277,187 @@ h1 {
   border-top: 1px solid var(--wbnq-border-subtle);
   padding-top: 12px;
   font-size: .88rem;
+}
+
+.bowl-player {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 18px;
+}
+
+.bowl-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.bowl-heading h2 {
+  margin: 0;
+  color: var(--wbnq-primary-strong);
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+.bowl-heading p,
+.bowl-card p {
+  margin: 6px 0 0;
+  color: var(--wbnq-text-muted);
+}
+
+.bowl-note {
+  max-width: 720px;
+  font-size: .86rem;
+}
+
+.sample-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 104px;
+  min-height: 40px;
+  border: 1px solid var(--wbnq-border-soft);
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--wbnq-page-bg-soft);
+  color: var(--wbnq-text-soft);
+  font-size: .76rem;
+  font-weight: 820;
+}
+
+.sample-status span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--wbnq-text-muted);
+}
+
+.sample-status.ready span { background: var(--wbnq-active); }
+.sample-status.loading span { background: var(--wbnq-caution); }
+.sample-status.error span { background: var(--wbnq-mute); }
+
+.sample-error {
+  margin: 0;
+  border: 1px solid var(--wbnq-mute);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--wbnq-mute-soft);
+  color: var(--wbnq-mute);
+  font-weight: 760;
+}
+
+.bowl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.bowl-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  border: 1px solid var(--wbnq-border-subtle);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--wbnq-surface-solid);
+}
+
+.bowl-card h3 {
+  margin: 0;
+  color: var(--wbnq-primary-strong);
+  font-size: 1.22rem;
+}
+
+.strike-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.strike-button {
+  min-width: 0;
+  min-height: 48px;
+  border-radius: 10px;
+  padding: 0 8px;
+  font-size: .88rem;
+}
+
+.active-samples {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--wbnq-border-subtle);
+  padding-top: 14px;
+}
+
+.active-samples-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.active-samples-heading h3 {
+  margin: 0;
+  color: var(--wbnq-primary-strong);
+  font-size: 1.2rem;
+}
+
+.active-samples-heading div,
+.active-sample-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.empty-active {
+  margin: 0;
+  color: var(--wbnq-text-muted);
+}
+
+.active-sample-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.active-sample {
+  min-width: 0;
+  border: 1px solid var(--wbnq-border-subtle);
+  border-left: 5px solid var(--wbnq-active);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--wbnq-surface-solid);
+}
+
+.active-sample.sample-muted {
+  border-left-color: var(--wbnq-mute);
+}
+
+.active-sample.sample-fading {
+  border-left-color: var(--wbnq-caution);
+}
+
+.active-sample-title {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.active-sample-title strong {
+  min-width: 0;
+  color: var(--wbnq-text-strong);
+}
+
+.active-sample-title span {
+  border: 1px solid var(--wbnq-border-soft);
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: var(--wbnq-page-bg-soft);
+  color: var(--wbnq-text-soft);
+  font-size: .72rem;
+  font-weight: 820;
 }
 
 .mode-row {
@@ -408,6 +591,10 @@ footer {
   .master {
     grid-template-columns: 1fr;
   }
+
+  .bowl-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -456,9 +643,33 @@ footer {
 
   .session-bar,
   .master,
+  .bowl-player,
   .channel,
   .mode-row {
     border-radius: 16px;
+  }
+
+  .active-sample-list {
+    grid-template-columns: 1fr;
+  }
+
+  .bowl-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sample-status {
+    width: fit-content;
+  }
+
+  .active-samples-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .active-samples-heading div {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .channel-heading {
