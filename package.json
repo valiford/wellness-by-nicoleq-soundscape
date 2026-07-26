@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "smoke:fade": "node scripts/fade-smoke.mjs",
-    "smoke:bowl": "node scripts/bowl-smoke.mjs"
+    "smoke:bowl": "node scripts/bowl-smoke.mjs",
+    "smoke:presets": "node scripts/presets-smoke.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
