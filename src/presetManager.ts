@@ -87,6 +87,10 @@ export function clonePreset(preset: SessionPreset): SessionPreset {
   };
 }
 
+export function cloneBowlSequence(sequence?: BowlSequence): BowlSequence | undefined {
+  return cloneSequence(sequence);
+}
+
 function makePreset(partial: Omit<SessionPreset, 'schemaVersion' | 'builtIn'>): SessionPreset {
   return { ...partial, schemaVersion: presetSchemaVersion, builtIn: true };
 }
@@ -289,22 +293,27 @@ function validateSequence(value: unknown, presetName: string): BowlSequence {
 }
 
 export function loadStoredPresets(storage: Storage): SessionPreset[] {
-  const raw = storage.getItem(presetStorageKey);
-  if (!raw) return [];
   try {
+    const raw = storage.getItem(presetStorageKey);
+    if (!raw) return [];
     return parsePresetBundle(raw).presets;
   } catch {
     return [];
   }
 }
 
-export function saveStoredPresets(storage: Storage, presets: SessionPreset[]) {
+export function saveStoredPresets(storage: Storage, presets: SessionPreset[]): boolean {
   const bundle: ImportedPresetBundle = {
     schemaVersion: presetSchemaVersion,
     exportedAt: new Date().toISOString(),
     presets: presets.map(preset => ({ ...clonePreset(preset), builtIn: false })),
   };
-  storage.setItem(presetStorageKey, JSON.stringify(bundle));
+  try {
+    storage.setItem(presetStorageKey, JSON.stringify(bundle));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function exportPresetBundle(presets: SessionPreset[]): string {

@@ -1,97 +1,55 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AudioEngine } from './audioEngine';
 import { BowlId, BowlSamplePlayer, BowlStyleId, SamplePlaybackSnapshot, bowlDefinitions, bowlSamples, bowlStyles } from './bowlSamplePlayer';
 import {
   BowlPlaybackDefaults,
   BowlSequence,
-  BowlSequenceStep,
   PresetChannel,
   SessionPreset,
-  builtInPresets,
-  clonePreset,
-  createPresetFromState,
+  cloneBowlSequence,
   defaultBowlDefaults,
-  exportPresetBundle,
-  loadStoredPresets,
-  parsePresetBundle,
   presetSchemaVersion,
   presetStorageKey,
-  saveStoredPresets,
 } from './presetManager';
-import { SequenceRunner, SequenceSnapshot, SequenceStatus, initialSequenceSnapshot } from './sequenceRunner';
+import { SequenceSnapshot } from './sequenceRunner';
+import { initialPreset, initialSequence, useSessionPresets } from './useSessionPresets';
+import { SequenceDraft, emptySequence, stepLabel, useSequenceRunner } from './useSequenceRunner';
 
 type PresentationMode = 'simple' | 'advanced';
 type SessionStatus = 'Stopped' | 'Active' | 'Fading' | 'Muted';
 type SampleStatus = 'Idle' | 'Loading' | 'Ready' | 'Error';
-type SequenceDraft = { type: BowlSequenceStep['type']; sampleId: string; seconds: number; volume: number; cue: string };
 
 const modeStorageKey = 'wbn-soundscape-presentation-mode';
-const builtIn = builtInPresets.map(clonePreset);
-const firstPreset = clonePreset(builtIn[0]);
 
 const getStoredMode = (): PresentationMode => {
   if (typeof window === 'undefined') return 'simple';
-  return window.localStorage.getItem(modeStorageKey) === 'advanced' ? 'advanced' : 'simple';
-};
-
-const cloneSequence = (sequence?: BowlSequence): BowlSequence | undefined => sequence
-  ? { ...sequence, steps: sequence.steps.map(step => ({ ...step })) }
-  : undefined;
-
-const stepLabel = (step: BowlSequenceStep | null) => {
-  if (!step) return 'None';
-  if (step.type === 'cue') return `${step.label}: ${step.text}`;
-  if (step.type === 'wait') return `${step.label} (${step.seconds}s)`;
-  if (step.type === 'master-volume') return `${step.label} (${Math.round(step.volume * 100)}%)`;
-  return step.label;
+  try {
+    return window.localStorage.getItem(modeStorageKey) === 'advanced' ? 'advanced' : 'simple';
+  } catch {
+    return 'simple';
+  }
 };
 
 export default function App() {
   const engine = useMemo(() => new AudioEngine(), []);
   const bowlPlayer = useMemo(() => new BowlSamplePlayer(() => engine.getSampleDestination(master)), [engine]);
   const fadeTimeoutRef = useRef<number | null>(null);
-  const lastNonZeroMasterRef = useRef(firstPreset.masterVolume);
-  const runStepRef = useRef<(step: BowlSequenceStep) => void>(() => undefined);
+  const lastNonZeroMasterRef = useRef(initialPreset.masterVolume);
   const [started, setStarted] = useState(false);
-  const [channels, setChannels] = useState<PresetChannel[]>(firstPreset.channels);
-  const [master, setMaster] = useState(firstPreset.masterVolume);
-  const [reverbAmount, setReverbAmount] = useState(firstPreset.reverbAmount);
-  const [fadeInSeconds, setFadeInSeconds] = useState(firstPreset.fadeInSeconds);
-  const [fadeOutSeconds, setFadeOutSeconds] = useState(firstPreset.fadeOutSeconds);
-  const [bowlDefaults, setBowlDefaults] = useState<BowlPlaybackDefaults>(firstPreset.bowlDefaults);
-  const [notes, setNotes] = useState(firstPreset.notes);
-  const [sequence, setSequence] = useState<BowlSequence | undefined>(cloneSequence(firstPreset.sequence));
-  const [customPresets, setCustomPresets] = useState<SessionPreset[]>(() => {
-    if (typeof window === 'undefined') return [];
-    return loadStoredPresets(window.localStorage);
-  });
-  const [selectedPresetId, setSelectedPresetId] = useState(firstPreset.id);
+  const [channels, setChannels] = useState<PresetChannel[]>(initialPreset.channels);
+  const [master, setMaster] = useState(initialPreset.masterVolume);
+  const [reverbAmount, setReverbAmount] = useState(initialPreset.reverbAmount);
+  const [fadeInSeconds, setFadeInSeconds] = useState(initialPreset.fadeInSeconds);
+  const [fadeOutSeconds, setFadeOutSeconds] = useState(initialPreset.fadeOutSeconds);
+  const [bowlDefaults, setBowlDefaults] = useState<BowlPlaybackDefaults>(initialPreset.bowlDefaults);
+  const [notes, setNotes] = useState(initialPreset.notes);
+  const [sequence, setSequence] = useState<BowlSequence | undefined>(initialSequence);
   const [mode, setMode] = useState<PresentationMode>(getStoredMode);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>('Stopped');
   const [sampleStatus, setSampleStatus] = useState<SampleStatus>('Idle');
   const [sampleError, setSampleError] = useState('');
   const [activeSamples, setActiveSamples] = useState<SamplePlaybackSnapshot[]>([]);
   const [announcement, setAnnouncement] = useState('');
-  const [presetName, setPresetName] = useState(firstPreset.name);
-  const [importText, setImportText] = useState('');
-  const [exportText, setExportText] = useState('');
-  const [sequenceSnapshot, setSequenceSnapshot] = useState<SequenceSnapshot>(initialSequenceSnapshot);
-  const [sequenceDraft, setSequenceDraft] = useState<SequenceDraft>({
-    type: 'cue',
-    sampleId: 'root-regular-strike',
-    seconds: 5,
-    volume: firstPreset.masterVolume,
-    cue: 'Offer a quiet facilitator cue.',
-  });
-
-  const allPresets = useMemo(() => [...builtIn, ...customPresets.map(clonePreset)], [customPresets]);
-  const selectedPreset = allPresets.find(item => item.id === selectedPresetId) ?? allPresets[0];
-
-  const runner = useMemo(() => new SequenceRunner({
-    onStep: step => runStepRef.current(step),
-    onSnapshot: setSequenceSnapshot,
-    onStateChange: setAnnouncement,
-  }), []);
 
   const cancelFadeTimeout = () => {
     if (fadeTimeoutRef.current === null) return;
@@ -99,20 +57,13 @@ export default function App() {
     fadeTimeoutRef.current = null;
   };
 
-  useEffect(() => () => {
-    cancelFadeTimeout();
-    runner.stop(false);
-    engine.stopAll();
-    bowlPlayer.stopAll();
-  }, [bowlPlayer, engine, runner]);
-
   useEffect(() => {
-    window.localStorage.setItem(modeStorageKey, mode);
+    try {
+      window.localStorage.setItem(modeStorageKey, mode);
+    } catch {
+      setAnnouncement('Display mode could not be saved in this browser storage.');
+    }
   }, [mode]);
-
-  useEffect(() => {
-    saveStoredPresets(window.localStorage, customPresets);
-  }, [customPresets]);
 
   useEffect(() => {
     if (!started) {
@@ -139,10 +90,7 @@ export default function App() {
     };
   }, [bowlPlayer, started]);
 
-  const applyPreset = (preset: SessionPreset) => {
-    const next = clonePreset(preset);
-    setSelectedPresetId(next.id);
-    setPresetName(next.name);
+  const applySessionPreset = useCallback((next: SessionPreset) => {
     setChannels(next.channels);
     setMaster(next.masterVolume);
     setReverbAmount(next.reverbAmount);
@@ -150,34 +98,14 @@ export default function App() {
     setFadeOutSeconds(next.fadeOutSeconds);
     setBowlDefaults(next.bowlDefaults);
     setNotes(next.notes);
-    setSequence(cloneSequence(next.sequence));
+    setSequence(cloneBowlSequence(next.sequence));
     lastNonZeroMasterRef.current = next.masterVolume || lastNonZeroMasterRef.current;
     engine.setMasterVolume(next.masterVolume);
     if (started) {
       next.channels.forEach(channel => engine.updateChannel(channel.id, channel));
       setSessionStatus(next.masterVolume === 0 ? 'Muted' : 'Active');
     }
-    setAnnouncement(`${next.name} preset loaded.`);
-  };
-
-  const requireSequenceLoadConfirmation = () => {
-    if (sequenceSnapshot.status !== 'Running' && sequenceSnapshot.status !== 'Paused') return true;
-    return window.confirm('A sequence is running. Loading another preset will stop it. Continue?');
-  };
-
-  const selectPreset = (id: string) => {
-    if (!requireSequenceLoadConfirmation()) return;
-    runner.stop(false);
-    const next = allPresets.find(item => item.id === id);
-    if (next) applyPreset(next);
-  };
-
-  const resetToDefaults = () => {
-    if (!requireSequenceLoadConfirmation()) return;
-    runner.stop(false);
-    applyPreset(builtIn[0]);
-    setAnnouncement('Current setup reset to the Grounding defaults.');
-  };
+  }, [engine, started]);
 
   const update = (id: string, patch: Partial<PresetChannel>) => {
     setChannels(current => current.map(channel => {
@@ -307,133 +235,69 @@ export default function App() {
     activeSamples.forEach(sample => replaceActiveSample(bowlPlayer.fadeOut(sample.id)));
   };
 
-  runStepRef.current = step => {
-    if (step.type === 'play-sample') playBowl(step.sampleId);
-    if (step.type === 'fade-bowls') fadeAllBowls();
-    if (step.type === 'stop-bowls') stopAllBowls();
-    if (step.type === 'master-volume') setMasterVolume(step.volume);
-  };
-
-  const currentSequence = sequence ?? { id: 'sequence-current', name: 'Current sequence', steps: [] };
-
-  const startSequence = () => {
-    if (!started || !sequence || sequence.steps.length === 0) return;
-    runner.start(sequence);
-  };
-
-  const clearSequence = () => {
-    runner.stop(false);
-    setSequence({ id: `sequence-${Date.now()}`, name: 'Custom sequence', steps: [] });
-    setAnnouncement('Sequence cleared.');
-  };
-
-  const addSequenceStep = () => {
-    const id = `step-${Date.now()}`;
-    let step: BowlSequenceStep;
-    if (sequenceDraft.type === 'play-sample') {
-      const sample = bowlSamples.find(item => item.id === sequenceDraft.sampleId) ?? bowlSamples[0];
-      step = { id, type: 'play-sample', sampleId: sample.id, label: sample.label };
-    } else if (sequenceDraft.type === 'wait') {
-      step = { id, type: 'wait', seconds: Math.max(0.5, sequenceDraft.seconds), label: 'Wait' };
-    } else if (sequenceDraft.type === 'fade-bowls') {
-      step = { id, type: 'fade-bowls', label: 'Fade out active bowls' };
-    } else if (sequenceDraft.type === 'stop-bowls') {
-      step = { id, type: 'stop-bowls', label: 'Stop active bowls' };
-    } else if (sequenceDraft.type === 'master-volume') {
-      step = { id, type: 'master-volume', volume: sequenceDraft.volume, label: 'Change master volume' };
-    } else {
-      step = { id, type: 'cue', text: sequenceDraft.cue, label: 'Facilitator cue' };
-    }
-    setSequence(current => ({
-      id: current?.id ?? `sequence-${Date.now()}`,
-      name: current?.name ?? 'Custom sequence',
-      steps: [...(current?.steps ?? []), step],
-    }));
-    setAnnouncement('Sequence step added.');
-  };
-
-  const removeSequenceStep = (id: string) => {
-    setSequence(current => current ? { ...current, steps: current.steps.filter(step => step.id !== id) } : current);
-  };
-
-  const moveSequenceStep = (id: string, direction: -1 | 1) => {
-    setSequence(current => {
-      if (!current) return current;
-      const steps = [...current.steps];
-      const index = steps.findIndex(step => step.id === id);
-      const nextIndex = index + direction;
-      if (index < 0 || nextIndex < 0 || nextIndex >= steps.length) return current;
-      const [step] = steps.splice(index, 1);
-      steps.splice(nextIndex, 0, step);
-      return { ...current, steps };
-    });
-  };
-
-  const savePreset = () => {
-    const next = createPresetFromState(presetName.trim() || 'Untitled preset', channels, master, reverbAmount, bowlDefaults, fadeInSeconds, fadeOutSeconds, sequence, notes);
-    setCustomPresets(current => [...current, next]);
-    setSelectedPresetId(next.id);
-    setAnnouncement(`${next.name} preset saved.`);
-  };
-
-  const duplicatePreset = () => {
-    const next = createPresetFromState(`${selectedPreset.name} copy`, channels, master, reverbAmount, bowlDefaults, fadeInSeconds, fadeOutSeconds, sequence, notes);
-    setCustomPresets(current => [...current, next]);
-    setSelectedPresetId(next.id);
-    setPresetName(next.name);
-    setAnnouncement(`${selectedPreset.name} duplicated.`);
-  };
-
-  const renamePreset = () => {
-    const name = presetName.trim();
-    if (!name) {
-      setAnnouncement('Preset name is required before renaming.');
-      return;
-    }
-    if (selectedPreset.builtIn) {
-      const next = createPresetFromState(name, channels, master, reverbAmount, bowlDefaults, fadeInSeconds, fadeOutSeconds, sequence, notes);
-      setCustomPresets(current => [...current, next]);
-      setSelectedPresetId(next.id);
-      setAnnouncement('Built-in preset saved as a renamed copy.');
-      return;
-    }
-    setCustomPresets(current => current.map(item => item.id === selectedPresetId ? { ...item, name } : item));
-    setAnnouncement(`Preset renamed to ${name}.`);
-  };
-
-  const deletePreset = () => {
-    if (selectedPreset.builtIn) {
-      setAnnouncement('Built-in presets cannot be deleted.');
-      return;
-    }
-    setCustomPresets(current => current.filter(item => item.id !== selectedPresetId));
-    applyPreset(builtIn[0]);
-    setAnnouncement('Preset deleted.');
-  };
-
-  const exportPresets = () => {
-    const text = exportPresetBundle(allPresets);
-    setExportText(text);
-    setAnnouncement('Preset JSON export is ready.');
-  };
-
-  const importPresets = () => {
-    try {
-      const bundle = parsePresetBundle(importText);
-      setCustomPresets(current => {
-        const importedIds = new Set(bundle.presets.map(preset => preset.id));
-        return [...current.filter(preset => !importedIds.has(preset.id)), ...bundle.presets.map(preset => ({ ...preset, builtIn: false }))];
-      });
-      setAnnouncement(`${bundle.presets.length} preset${bundle.presets.length === 1 ? '' : 's'} imported.`);
-    } catch (error) {
-      setAnnouncement(error instanceof Error ? error.message : 'Preset import failed.');
-    }
-  };
-
   const updateBowlDefault = (patch: Partial<BowlPlaybackDefaults>) => {
     setBowlDefaults(current => ({ ...current, ...patch, styleGains: patch.styleGains ?? current.styleGains }));
   };
 
+  const {
+    runner,
+    sequenceSnapshot,
+    sequenceDraft,
+    setSequenceDraft,
+    startSequence,
+    clearSequence,
+    addSequenceStep,
+    removeSequenceStep,
+    moveSequenceStep,
+  } = useSequenceRunner({
+    initialMaster: initialPreset.masterVolume,
+    onAnnouncement: setAnnouncement,
+    actions: {
+      onPlaySample: playBowl,
+      onFadeBowls: fadeAllBowls,
+      onStopBowls: stopAllBowls,
+      onMasterVolume: setMasterVolume,
+    },
+  });
+
+  const confirmBeforeReplacingPreset = useCallback(() => {
+    if (sequenceSnapshot.status !== 'Running' && sequenceSnapshot.status !== 'Paused') return true;
+    return window.confirm('A sequence is running. Loading another preset will stop it. Continue?');
+  }, [sequenceSnapshot.status]);
+
+  const {
+    allPresets,
+    selectedPreset,
+    selectedPresetId,
+    presetName,
+    importText,
+    exportText,
+    setPresetName,
+    setImportText,
+    selectPreset,
+    resetToDefaults,
+    savePreset,
+    duplicatePreset,
+    renamePreset,
+    deletePreset,
+    exportPresets,
+    importPresets,
+  } = useSessionPresets({
+    getSessionState: () => ({ channels, master, reverbAmount, bowlDefaults, fadeInSeconds, fadeOutSeconds, sequence, notes }),
+    onApplyPreset: applySessionPreset,
+    confirmBeforeReplacing: confirmBeforeReplacingPreset,
+    onAnnouncement: setAnnouncement,
+    onBeforeReplace: () => runner.stop(false),
+  });
+
+  useEffect(() => () => {
+    cancelFadeTimeout();
+    runner.stop(false);
+    engine.stopAll();
+    bowlPlayer.stopAll();
+  }, [bowlPlayer, engine, runner]);
+
+  const currentSequence = sequence ?? emptySequence;
   const activeChannels = channels.filter(channel => channel.enabled).length;
 
   return (
@@ -479,16 +343,16 @@ export default function App() {
         snapshot={sequenceSnapshot}
         draft={sequenceDraft}
         onDraft={setSequenceDraft}
-        onStart={startSequence}
+        onStart={() => startSequence(started, sequence)}
         onPause={() => runner.pause()}
         onResume={() => runner.resume()}
         onSkip={() => runner.skip()}
         onPrevious={() => runner.previous()}
         onStop={() => runner.stop()}
-        onClear={clearSequence}
-        onAdd={addSequenceStep}
-        onRemove={removeSequenceStep}
-        onMove={moveSequenceStep}
+        onClear={() => clearSequence(setSequence)}
+        onAdd={() => addSequenceStep(setSequence)}
+        onRemove={id => removeSequenceStep(setSequence, id)}
+        onMove={(id, direction) => moveSequenceStep(setSequence, id, direction)}
       />
 
       <MasterControl

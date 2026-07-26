@@ -146,6 +146,15 @@ async function runPresetCrud(page) {
   await setTextarea(page.getByLabel('Import JSON'), '{"schemaVersion":1,"presets":[{"id":"bad"}]}');
   await page.getByRole('button', { name: 'Import presets' }).click();
   assert((await announcement(page)).includes('missing a name'), 'Expected invalid import rejection.');
+  assert(await page.getByLabel('Session preset').locator('option', { hasText: 'Imported Smoke' }).count() === 1, 'Expected invalid import not to remove saved presets.');
+
+  const builtInCollision = JSON.parse(validImport);
+  builtInCollision.presets[0].id = 'builtin-grounding';
+  builtInCollision.presets[0].name = 'Built-in Collision';
+  await setTextarea(page.getByLabel('Import JSON'), JSON.stringify(builtInCollision));
+  await page.getByRole('button', { name: 'Import presets' }).click();
+  assert((await announcement(page)).includes('built-in preset id'), 'Expected built-in id collision rejection.');
+  assert(await page.getByLabel('Session preset').locator('option', { hasText: 'Built-in Collision' }).count() === 0, 'Expected built-in collision not to add a preset.');
 }
 
 async function runSequenceChecks(page) {
