@@ -178,8 +178,8 @@ export default function App() {
 function AppHeader() {
   return (
     <header className="app-header">
-      <div>
-        <p className="eyebrow">Wellness by Nicole</p>
+      <div className="brand-heading">
+        <p className="eyebrow">Wellness by Nicole Q</p>
         <h1>Soundscape Studio</h1>
         <p className="lede">Private facilitator console for guided sessions, Zoom rooms, and calm in-person transitions.</p>
       </div>
