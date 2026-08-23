@@ -197,7 +197,7 @@ async function runSequenceChecks(page) {
 
   await page.getByRole('button', { name: 'Skip step' }).click();
   await page.waitForFunction(() => document.body.textContent?.includes('Wait remaining: 1s') || document.body.textContent?.includes('Wait remaining: 2s'), null, { timeout: 2_000 });
-  await page.getByRole('button', { name: 'Pause' }).click();
+  await page.getByRole('button', { name: 'Pause', exact: true }).click();
   const pausedWait = await page.locator('.sequence-readout').innerText();
   await wait(900);
   assert(await page.locator('.sequence-readout').innerText() === pausedWait, 'Expected paused wait countdown to hold position.');

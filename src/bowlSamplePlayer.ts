@@ -22,6 +22,8 @@ export type BowlSample = {
   defaultVolume: number;
 };
 
+export type BowlLoadState = 'unloaded' | 'loading' | 'ready' | 'failed';
+
 export type SamplePlaybackSnapshot = {
   id: string;
   sampleId: string;
@@ -67,26 +69,57 @@ export const bowlSamples: BowlSample[] = bowlDefinitions.flatMap(bowl => bowlSty
 
 export class BowlSamplePlayer {
   private buffers = new Map<string, AudioBuffer>();
+  private loadStates = new Map<string, BowlLoadState>();
+  private loadPromises = new Map<string, Promise<void>>();
+  private loadListeners = new Set<(sampleId: string, state: BowlLoadState) => void>();
   private playbacks = new Map<string, PlaybackNodes>();
   private nextPlaybackId = 1;
 
   constructor(private readonly getDestination: () => Promise<SampleDestination | null>) {}
 
-  async preload(samples = bowlSamples) {
-    await Promise.all(samples.map(sample => this.load(sample)));
+  subscribeToLoadState(listener: (sampleId: string, state: BowlLoadState) => void) {
+    this.loadListeners.add(listener);
+    return () => this.loadListeners.delete(listener);
+  }
+
+  getLoadState(sampleId: string): BowlLoadState {
+    return this.loadStates.get(sampleId) ?? 'unloaded';
+  }
+
+  async preloadPriority() {
+    await Promise.all(bowlSamples.filter(sample => sample.styleId === 'regular-strike').map(sample => this.load(sample)));
+  }
+
+  async preloadOptional() {
+    for (const sample of bowlSamples.filter(item => item.styleId !== 'regular-strike')) {
+      try { await this.load(sample); } catch { /* optional styles report their own failed state */ }
+    }
   }
 
   async load(sample: BowlSample) {
     if (this.buffers.has(sample.id)) return;
-    const destination = await this.getDestination();
-    if (!destination) throw new Error('Audio output is not ready.');
-
-    const response = await fetch(sample.url);
-    if (!response.ok) throw new Error('The bowl audio file could not be loaded.');
-
-    const data = await response.arrayBuffer();
-    const buffer = await destination.context.decodeAudioData(data);
-    this.buffers.set(sample.id, buffer);
+    const existing = this.loadPromises.get(sample.id);
+    if (existing) return existing;
+    this.setLoadState(sample.id, 'loading');
+    const promise = (async () => {
+      const destination = await this.getDestination();
+      try {
+        if (!destination) throw new Error('Audio output is not ready.');
+        const response = await fetch(sample.url);
+        if (!response.ok) throw new Error('The bowl audio file could not be loaded.');
+        const data = await response.arrayBuffer();
+        const buffer = await destination.context.decodeAudioData(data);
+        this.buffers.set(sample.id, buffer);
+        this.setLoadState(sample.id, 'ready');
+      } catch (error) {
+        this.setLoadState(sample.id, 'failed');
+        throw error;
+      } finally {
+        this.loadPromises.delete(sample.id);
+      }
+    })();
+    this.loadPromises.set(sample.id, promise);
+    return promise;
   }
 
   async play(sample: BowlSample, onEnded: (id: string) => void, volume = sample.defaultVolume) {
@@ -198,6 +231,11 @@ export class BowlSamplePlayer {
     const now = playback.gain.context.currentTime;
     playback.gain.gain.cancelScheduledValues(now);
     playback.gain.gain.setTargetAtTime(playback.muted ? 0 : playback.volume, now, 0.02);
+  }
+
+  private setLoadState(sampleId: string, state: BowlLoadState) {
+    this.loadStates.set(sampleId, state);
+    this.loadListeners.forEach(listener => listener(sampleId, state));
   }
 
   private snapshot(id: string) {

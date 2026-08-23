@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AudioEngine } from './audioEngine';
-import { BowlId, BowlSamplePlayer, BowlStyleId, SamplePlaybackSnapshot, bowlDefinitions, bowlSamples, bowlStyles } from './bowlSamplePlayer';
+import { BowlId, BowlLoadState, BowlSamplePlayer, BowlStyleId, SamplePlaybackSnapshot, bowlDefinitions, bowlSamples, bowlStyles } from './bowlSamplePlayer';
 import {
   BowlPlaybackDefaults,
   BowlSequence,
@@ -15,6 +15,8 @@ import { SequenceSnapshot } from './sequenceRunner';
 import ExperienceMode from './ExperienceMode';
 import { initialPreset, initialSequence, useSessionPresets } from './useSessionPresets';
 import { SequenceDraft, emptySequence, stepLabel, useSequenceRunner } from './useSequenceRunner';
+import LiveEssentials from './LiveEssentials';
+import { useSessionTimer } from './useSessionTimer';
 
 type PresentationMode = 'simple' | 'advanced';
 type ClientMode = 'facilitator' | 'experience';
@@ -55,6 +57,9 @@ export default function App() {
   const [sampleError, setSampleError] = useState('');
   const [activeSamples, setActiveSamples] = useState<SamplePlaybackSnapshot[]>([]);
   const [announcement, setAnnouncement] = useState('');
+  const [sampleLoadStates, setSampleLoadStates] = useState<Record<string, BowlLoadState>>({});
+  const [voiceDucked, setVoiceDucked] = useState(false);
+  const sessionTimer = useSessionTimer(started);
 
   useEffect(() => {
     channelsRef.current = channels;
@@ -83,9 +88,11 @@ export default function App() {
     let cancelled = false;
     setSampleStatus('Loading');
     setSampleError('');
-    bowlPlayer.preload()
+    const unsubscribe = bowlPlayer.subscribeToLoadState((sampleId, state) => setSampleLoadStates(current => ({ ...current, [sampleId]: state })));
+    bowlPlayer.preloadPriority()
       .then(() => {
         if (!cancelled) setSampleStatus('Ready');
+        void bowlPlayer.preloadOptional();
       })
       .catch(() => {
         if (!cancelled) {
@@ -96,6 +103,7 @@ export default function App() {
 
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, [bowlPlayer, started]);
 
@@ -136,6 +144,8 @@ export default function App() {
 
   const start = async () => {
     await engine.start(master);
+    engine.setVoiceDuck(false);
+    setVoiceDucked(false);
     startGeneratedChannels(channels);
     setStarted(true);
     setSessionStatus(master === 0 ? 'Muted' : 'Active');
@@ -149,6 +159,8 @@ export default function App() {
     bowlPlayer.stopAll();
     setActiveSamples([]);
     setStarted(false);
+    setVoiceDucked(false);
+    sessionTimer.reset();
     setSessionStatus('Stopped');
     setAnnouncement('Audio stopped.');
   };
@@ -178,6 +190,15 @@ export default function App() {
     if (started) setSessionStatus('Muted');
     setAnnouncement('Mute all is active.');
   };
+
+  const toggleVoiceDuck = () => {
+    const next = !voiceDucked;
+    setVoiceDucked(next);
+    engine.setVoiceDuck(next);
+    setAnnouncement(next ? 'Background channels lowered for voice.' : 'Background channels restored.');
+  };
+
+  const quickFade = (seconds: number) => fadeMaster(0, seconds, 'Muted');
 
   const fadeMaster = (target: number, seconds: number, completedStatus: SessionStatus) => {
     cancelFadeTimeout();
@@ -364,6 +385,22 @@ export default function App() {
         onMute={muteAll}
       />
 
+      <LiveEssentials
+        engine={engine}
+        started={started}
+        bowlReady={(['root', 'heart', 'crown'] as const).every(id => sampleLoadStates[`${id}-regular-strike`] === 'ready')}
+        master={master}
+        elapsedSeconds={sessionTimer.elapsedSeconds}
+        timerPaused={sessionTimer.paused}
+        onTimerPause={sessionTimer.setPaused}
+        onTimerReset={sessionTimer.reset}
+        onMasterChange={setMasterVolume}
+        onFade={quickFade}
+        voiceDucked={voiceDucked}
+        onDuck={toggleVoiceDuck}
+        onBowl={playBowl}
+      />
+
       <div className="announcer" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>
 
       <ModeToggle clientMode={clientMode} detailMode={detailMode} onClientModeChange={changeClientMode} onDetailModeChange={setDetailMode} />
@@ -374,6 +411,7 @@ export default function App() {
           master={master}
           analyser={engine.getAnalyser()}
           activeSamples={activeSamples}
+          sampleLoadStates={sampleLoadStates}
           onPlay={playBowl}
           onVolumeChange={updateExperienceVolume}
           onMute={toggleBowlMute}
@@ -433,10 +471,11 @@ export default function App() {
         onFadeOutSeconds={setFadeOutSeconds}
       />
 
-      <BowlPlayer
+          <BowlPlayer
         activeSamples={activeSamples}
         sampleStatus={sampleStatus}
-        sampleError={sampleError}
+          sampleError={sampleError}
+          sampleLoadStates={sampleLoadStates}
         started={started}
         bowlDefaults={bowlDefaults}
         onDefaultsChange={updateBowlDefault}
@@ -770,6 +809,7 @@ function BowlPlayer({
   activeSamples,
   sampleStatus,
   sampleError,
+  sampleLoadStates,
   started,
   bowlDefaults,
   onDefaultsChange,
@@ -784,6 +824,7 @@ function BowlPlayer({
   activeSamples: SamplePlaybackSnapshot[];
   sampleStatus: SampleStatus;
   sampleError: string;
+  sampleLoadStates: Record<string, BowlLoadState>;
   started: boolean;
   bowlDefaults: BowlPlaybackDefaults;
   onDefaultsChange: (patch: Partial<BowlPlaybackDefaults>) => void;
@@ -836,7 +877,7 @@ function BowlPlayer({
             {bowlStyles.map(style => <option key={style.id} value={style.id}>{style.name}</option>)}
           </select>
         </label>
-        <button disabled={!started} onClick={() => onPlay(selectedSampleId)}>Play default bowl</button>
+        <button disabled={!started || sampleLoadStates[selectedSampleId] !== 'ready'} onClick={() => onPlay(selectedSampleId)}>Play default bowl</button>
         {bowlStyles.map(style => (
           <Control
             key={style.id}
@@ -863,8 +904,8 @@ function BowlPlayer({
                 const sample = bowlSamples.find(item => item.bowlId === bowl.id && item.styleId === style.id);
                 if (!sample) return null;
                 return (
-                  <button className="strike-button" disabled={!started} key={sample.id} onClick={() => onPlay(sample.id)} aria-label={`Play ${sample.label}`}>
-                    Play {style.name}
+                    <button className="strike-button" disabled={!started || sampleLoadStates[sample.id] === 'loading' || sampleLoadStates[sample.id] === 'failed'} key={sample.id} onClick={() => onPlay(sample.id)} aria-label={`Play ${sample.label}`}>
+                    {sampleLoadStates[sample.id] === 'loading' ? 'Loading...' : sampleLoadStates[sample.id] === 'failed' ? 'Unavailable' : `Play ${style.name}`}
                   </button>
                 );
               })}

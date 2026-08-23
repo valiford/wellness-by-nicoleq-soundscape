@@ -14,35 +14,61 @@ type ChannelNodes = {
   filter: BiquadFilterNode;
   dry: GainNode;
   wet: GainNode;
+  settings: ChannelSettings;
 };
 
 export class AudioEngine {
   private context: AudioContext | null = null;
+  private startPromise: Promise<void> | null = null;
   private master: GainNode | null = null;
+  private safety: DynamicsCompressorNode | null = null;
   private analyser: AnalyserNode | null = null;
   private convolver: ConvolverNode | null = null;
   private channels = new Map<string, ChannelNodes>();
+  private voiceDucked = false;
 
   async start(masterVolume = 0.45) {
-    if (!this.context) {
+    if (this.context) {
+      if (this.context.state === 'suspended') await this.context.resume();
+      return;
+    }
+    if (this.startPromise) return this.startPromise;
+    this.startPromise = (async () => {
       this.context = new AudioContext();
       this.master = this.context.createGain();
       this.master.gain.value = masterVolume;
+      this.safety = this.context.createDynamicsCompressor();
+      this.safety.threshold.value = -6;
+      this.safety.knee.value = 12;
+      this.safety.ratio.value = 4;
+      this.safety.attack.value = 0.003;
+      this.safety.release.value = 0.25;
       this.analyser = this.context.createAnalyser();
       this.analyser.fftSize = 256;
       this.analyser.smoothingTimeConstant = 0.82;
-      this.master.connect(this.analyser);
+      this.master.connect(this.safety);
+      this.safety.connect(this.analyser);
       this.analyser.connect(this.context.destination);
       this.convolver = this.context.createConvolver();
       this.convolver.buffer = this.createImpulseResponse(2.2, 2.4);
       this.convolver.connect(this.master);
+      if (this.context.state === 'suspended') await this.context.resume();
+    })();
+    try {
+      await this.startPromise;
+    } finally {
+      this.startPromise = null;
     }
-    if (this.context.state === 'suspended') await this.context.resume();
   }
 
   stopAll() {
-    this.channels.forEach(({ source }) => {
+    this.channels.forEach(({ source, gain, filter, dry, wet }) => {
       try { source.stop(); } catch { /* already stopped */ }
+      source.disconnect();
+      gain.disconnect();
+      filter.disconnect();
+      dry.disconnect();
+      wet.disconnect();
     });
     this.channels.clear();
   }
@@ -90,11 +116,24 @@ export class AudioEngine {
     return this.analyser;
   }
 
+  getOutputLevel() {
+    if (!this.analyser) return 0;
+    const data = new Uint8Array(this.analyser.fftSize);
+    this.analyser.getByteTimeDomainData(data);
+    let total = 0;
+    data.forEach(value => {
+      const sample = (value - 128) / 128;
+      total += sample * sample;
+    });
+    return Math.min(1, Math.sqrt(total / data.length) * 2.8);
+  }
+
   updateChannel(id: string, settings: ChannelSettings) {
     const node = this.channels.get(id);
     if (!node || !this.context) return;
     const now = this.context.currentTime;
-    node.gain.gain.setTargetAtTime(settings.enabled ? settings.volume : 0, now, 0.03);
+    node.settings = { ...settings };
+    node.gain.gain.setTargetAtTime(this.effectiveChannelVolume(settings), now, 0.03);
     node.filter.frequency.setTargetAtTime(settings.filter, now, 0.03);
     node.dry.gain.setTargetAtTime(1 - settings.reverb, now, 0.03);
     node.wet.gain.setTargetAtTime(settings.reverb, now, 0.03);
@@ -107,7 +146,19 @@ export class AudioEngine {
     const existing = this.channels.get(id);
     if (!existing) return;
     try { existing.source.stop(); } catch { /* already stopped */ }
+    existing.source.disconnect();
+    existing.gain.disconnect();
+    existing.filter.disconnect();
+    existing.dry.disconnect();
+    existing.wet.disconnect();
     this.channels.delete(id);
+  }
+
+  setVoiceDuck(ducked: boolean) {
+    this.voiceDucked = ducked;
+    if (!this.context) return;
+    const now = this.context.currentTime;
+    this.channels.forEach(({ gain, settings }) => gain.gain.setTargetAtTime(this.effectiveChannelVolume(settings), now, 0.18));
   }
 
   private connectChannel(id: string, source: AudioScheduledSourceNode, settings: ChannelSettings) {
@@ -119,7 +170,7 @@ export class AudioEngine {
     filter.type = 'lowpass';
     filter.frequency.value = settings.filter;
     filter.Q.value = 0.7;
-    gain.gain.value = settings.enabled ? settings.volume : 0;
+    gain.gain.value = this.effectiveChannelVolume(settings);
     dry.gain.value = 1 - settings.reverb;
     wet.gain.value = settings.reverb;
     source.connect(filter);
@@ -128,7 +179,11 @@ export class AudioEngine {
     gain.connect(wet);
     dry.connect(this.master);
     wet.connect(this.convolver);
-    this.channels.set(id, { source, gain, filter, dry, wet });
+    this.channels.set(id, { source, gain, filter, dry, wet, settings: { ...settings } });
+  }
+
+  private effectiveChannelVolume(settings: ChannelSettings) {
+    return settings.enabled ? settings.volume * (this.voiceDucked ? 0.28 : 1) : 0;
   }
 
   private createNoiseBuffer(kind: NoiseKind) {

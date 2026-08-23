@@ -48,6 +48,15 @@ try {
   assert(await page.locator('.experience-control-panel').count() === 1, 'Expected one selected chakra control panel.');
   assert(await page.locator('.experience-control-panel').evaluate(node => !node.closest('.geometry-field')), 'Expected selected controls outside the geometry field.');
   assert(await page.locator('.audio-reactive-spiral').count() === 1, 'Expected the live audio visualizer canvas.');
+  const environmentPicker = page.getByLabel('Visual environment');
+  assert(await environmentPicker.locator('option').allTextContents().then(items => items.join('|')) === 'Pearl Flow|Violet Flow|Chakra Flow|Reactive Spiral|Still / None', 'Expected all visual environments.');
+  await environmentPicker.selectOption('violet');
+  assert(await page.locator('.visual-environment-video').count() === 1, 'Expected the selected visual environment video.');
+  assert(await page.locator('.visual-environment-video').evaluate(video => video.muted && video.loop && video.playsInline), 'Expected visual environment video to be muted, looping, and inline.');
+  await environmentPicker.selectOption('still');
+  assert(await page.locator('.visual-environment-video').count() === 0, 'Expected Still / None to stop visual video playback.');
+  await environmentPicker.selectOption('pearl');
+  assert(await page.locator('.live-essentials').count() === 1, 'Expected Live Essentials controls.');
   assert(await page.locator('.channel').count() === 0, 'Expected generated channel controls to stay in Facilitator Mode.');
   assert(await page.locator('.bowl-tile.unavailable').count() === 4, 'Expected four unavailable bowl tiles.');
   assert(await page.locator('.bowl-tile.unavailable').evaluateAll(items => items.every(item => item.disabled)), 'Expected unavailable bowl tiles to be disabled.');
@@ -68,6 +77,13 @@ try {
   await page.reload({ waitUntil: 'networkidle' });
   assert(await page.locator('.spiral-core').evaluate(node => getComputedStyle(node, '::before').animationName === 'none'), 'Expected reduced motion to disable the spiral animation.');
   await page.getByRole('button', { name: 'Start audio' }).click();
+  const timer = page.locator('.live-essential-timer strong');
+  await page.waitForTimeout(1100);
+  assert((await timer.textContent()) !== '00:00', 'Expected the session timer to start with audio.');
+  await page.getByRole('button', { name: 'Pause timer' }).click();
+  assert(await page.getByRole('button', { name: 'Resume timer' }).count() === 1, 'Expected timer pause/resume controls.');
+  await page.getByRole('button', { name: 'Duck for voice' }).click();
+  assert(await page.getByRole('button', { name: 'Restore voice mix' }).count() === 1, 'Expected manual voice ducking.');
   assert(await page.locator('.audio-reactive-spiral').evaluate(canvas => canvas.getBoundingClientRect().width > 0 && canvas.getBoundingClientRect().height > 0), 'Expected the analyser visualizer to initialize safely.');
   await page.getByRole('button', { name: 'Regular Strike' }).click();
   await page.getByRole('button', { name: 'Mute bowl' }).waitFor({ state: 'visible', timeout: 5000 });
@@ -75,6 +91,16 @@ try {
   await page.getByRole('button', { name: 'Mute all' }).click();
   assert(await page.locator('.core-playback').filter({ hasText: 'Muted during playback' }).count() === 1, 'Expected Mute All to mute Experience Mode bowl playback.');
 
+  for (const width of [1440, 1024, 768, 430, 390]) {
+    await page.setViewportSize({ width, height: 1100 });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert(overflow <= 1, `Expected no Experience Mode overflow at ${width}px, got ${overflow}px.`);
+  }
+  await page.setViewportSize({ width: 844, height: 390 });
+  const experienceLandscapeOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  assert(experienceLandscapeOverflow <= 1, `Expected no Experience Mode landscape overflow, got ${experienceLandscapeOverflow}px.`);
+
+  await page.setViewportSize({ width: 390, height: 1100 });
   await page.getByRole('button', { name: 'Facilitator Mode' }).click();
   assert(await page.getByRole('heading', { name: 'Repeatable setups' }).count() === 1, 'Expected Facilitator Mode to remain available.');
   assert(await facilitatorToggle.isChecked(), 'Expected generated channel enabled state to be restored after returning to Facilitator Mode.');

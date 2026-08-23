@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BowlId, BowlStyleId, bowlDefinitions, bowlSamples, bowlStyles } from './bowlSamplePlayer';
-import { activeExperienceChakras, ExperienceChakra, experienceChakras } from './experienceGeometry';
+import { BowlId, BowlLoadState, bowlDefinitions, bowlSamples, bowlStyles } from './bowlSamplePlayer';
+import { ExperienceChakra, experienceChakras } from './experienceGeometry';
 import AudioReactiveSpiral from './AudioReactiveSpiral';
+import VisualEnvironment, { VisualEnvironmentId } from './VisualEnvironment';
 
 type ExperienceModeProps = {
   started: boolean;
   master: number;
   analyser: AnalyserNode | null;
   activeSamples: { id: string; sampleId: string; volume: number; muted: boolean; fading?: boolean }[];
+  sampleLoadStates: Record<string, BowlLoadState>;
   onPlay: (sampleId: string, volumeOverride?: number) => void;
   onVolumeChange: (chakraId: BowlId, volume: number) => void;
   onMute: (id: string, muted: boolean) => void;
@@ -16,9 +18,11 @@ type ExperienceModeProps = {
 
 const defaultVolumes: Record<BowlId, number> = { crown: 0.62, heart: 0.58, root: 0.54 };
 
-export default function ExperienceMode({ started, master, analyser, activeSamples, onPlay, onVolumeChange, onMute, onStop }: ExperienceModeProps) {
+export default function ExperienceMode({ started, master, analyser, activeSamples, sampleLoadStates, onPlay, onVolumeChange, onMute, onStop }: ExperienceModeProps) {
   const [selectedId, setSelectedId] = useState<BowlId>('heart');
   const [volumes, setVolumes] = useState<Record<BowlId, number>>(defaultVolumes);
+  const [motionEnabled, setMotionEnabled] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const [visualEnvironment, setVisualEnvironment] = useState<VisualEnvironmentId>('pearl');
   const dragRef = useRef<{ chakraId: BowlId } | null>(null);
   const geometryFieldRef = useRef<HTMLDivElement | null>(null);
   const [geometryWidth, setGeometryWidth] = useState(790);
@@ -50,6 +54,12 @@ export default function ExperienceMode({ started, master, analyser, activeSample
   };
 
   const handlePointerMove = (event: React.PointerEvent) => {
+    const canvas = event.currentTarget as HTMLElement;
+    const canvasBounds = canvas.getBoundingClientRect();
+    const motionX = ((event.clientX - canvasBounds.left) / canvasBounds.width - 0.5) * 2;
+    const motionY = ((event.clientY - canvasBounds.top) / canvasBounds.height - 0.5) * 2;
+    canvas.style.setProperty('--motion-x', String(Math.max(-1, Math.min(1, motionX))));
+    canvas.style.setProperty('--motion-y', String(Math.max(-1, Math.min(1, motionY))));
     if (!dragRef.current) return;
     const { chakraId } = dragRef.current;
     const field = event.currentTarget.querySelector('.geometry-field');
@@ -70,6 +80,13 @@ export default function ExperienceMode({ started, master, analyser, activeSample
     dragRef.current = null;
   };
 
+  const resetMotion = (event: React.PointerEvent) => {
+    const canvas = event.currentTarget as HTMLElement;
+    canvas.style.setProperty('--motion-x', '0');
+    canvas.style.setProperty('--motion-y', '0');
+    handlePointerUp();
+  };
+
   const select = (chakra: ExperienceChakra) => {
     if (chakra.active) setSelectedId(chakra.id as BowlId);
   };
@@ -84,7 +101,8 @@ export default function ExperienceMode({ started, master, analyser, activeSample
   })), []);
 
   return (
-    <section className="experience-shell" aria-label="Experience Mode">
+    <section className={`experience-shell environment-${visualEnvironment}`} aria-label="Experience Mode">
+      <VisualEnvironment selectedId={visualEnvironment} onChange={setVisualEnvironment} motionEnabled={motionEnabled} />
       <div className="experience-heading">
         <div>
           <p className="eyebrow">Client-facing sound interface</p>
@@ -97,7 +115,11 @@ export default function ExperienceMode({ started, master, analyser, activeSample
         </div>
       </div>
 
-      <div className="experience-canvas" onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}>
+      <div className={`experience-canvas ${motionEnabled ? 'motion-enabled' : 'motion-paused'}`} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp} onPointerLeave={resetMotion}>
+        <div className="motion-toolbar">
+          <span>Ambient motion</span>
+          <button className="motion-toggle" aria-pressed={motionEnabled} onClick={() => setMotionEnabled(current => !current)}>{motionEnabled ? 'Pause motion' : 'Play motion'}</button>
+        </div>
         <div className="experience-visual-layout">
           <aside className="experience-control-panel" aria-live="polite">
             <p className="eyebrow" style={{ color: selected.color }}>Selected chakra</p>
@@ -112,7 +134,7 @@ export default function ExperienceMode({ started, master, analyser, activeSample
               <div className="core-actions" aria-label={`${selected.name} bowl controls`}>
                 {bowlStyles.map(style => {
                   const sampleId = `${selectedId}-${style.id}`;
-                  return <button key={style.id} disabled={!started} onClick={() => onPlay(sampleId, selectedVolume)}>{style.name}</button>;
+                  return <button key={style.id} disabled={!started || sampleLoadStates[sampleId] !== 'ready'} onClick={() => onPlay(sampleId, selectedVolume)}>{sampleLoadStates[sampleId] === 'loading' ? 'Loading...' : sampleLoadStates[sampleId] === 'failed' ? 'Unavailable' : style.name}</button>;
                 })}
               </div>
               {activePlayback && <div className="core-playback-actions">
@@ -124,6 +146,8 @@ export default function ExperienceMode({ started, master, analyser, activeSample
           </aside>
 
           <div ref={geometryFieldRef} className="geometry-field" aria-label="Seven chakra positions">
+            <div className="motion-orb orb-one" aria-hidden="true" />
+            <div className="motion-orb orb-two" aria-hidden="true" />
             <div className="geometry-ring ring-outer" />
             <div className="geometry-ring ring-middle" />
             <div className="geometry-ring ring-inner" />
@@ -138,7 +162,7 @@ export default function ExperienceMode({ started, master, analyser, activeSample
               <button
                 key={chakra.id}
                 className={`chakra-node ${chakra.active ? 'active' : 'inactive'} ${isSelected ? 'selected' : ''}`}
-                style={{ '--chakra-color': chakra.color, '--chakra-angle': `${chakra.angle}deg`, '--chakra-volume': volume ?? 0.45, '--chakra-radius': `${Math.round(maxNodeRadius * (volume ?? 0.45))}px` } as React.CSSProperties}
+                style={{ '--chakra-color': chakra.color, '--chakra-angle': `${chakra.angle}deg`, '--chakra-volume': volume ?? 0.45, '--chakra-radius': `${Math.round(maxNodeRadius * (volume ?? 0.45))}px`, '--chakra-index': experienceChakras.indexOf(chakra) } as React.CSSProperties}
                 onClick={() => select(chakra)}
                 onPointerDown={event => handlePointerDown(event, chakra)}
                 aria-label={`${chakra.name}${chakra.active ? `, volume ${Math.round((volume ?? 0) * 100)} percent` : ', coming soon'}`}

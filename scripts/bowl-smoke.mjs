@@ -98,9 +98,9 @@ try {
   await page.waitForFunction(() => document.querySelector('.sample-status')?.textContent?.includes('Ready'), null, { timeout: 10_000 });
 
   await page.getByRole('button', { name: 'Play Root Bowl - Regular Strike' }).click();
-  await page.getByRole('button', { name: 'Play Heart Bowl - Amplified Rim' }).click();
-  await page.getByRole('button', { name: 'Play Crown Bowl - Hard Strike' }).click();
-  await page.waitForFunction(() => document.querySelectorAll('.active-sample').length === 3, null, { timeout: 2_000 });
+  await page.getByRole('button', { name: 'Play Heart Bowl - Amplified Rim' }).click({ timeout: 15_000 });
+  await page.getByRole('button', { name: 'Play Crown Bowl - Hard Strike' }).click({ timeout: 15_000 });
+  await page.waitForFunction(() => document.querySelectorAll('.active-sample').length === 3, null, { timeout: 5_000 });
 
   for (const [label, volume] of Object.entries(expectedDefaultVolumes)) {
     const card = page.locator('.active-sample').filter({ hasText: label });
@@ -129,11 +129,14 @@ try {
   assert(await page.locator('.master-slider input').inputValue() === '0', 'Expected global Mute All to silence the master output.');
   assert(await page.locator('.active-sample').first().innerText().then(text => text.includes('Muted')), 'Expected global Mute All to mute active bowl samples.');
 
-  for (const width of [1440, 1024, 768, 390]) {
+  for (const width of [1440, 1024, 768, 430, 390]) {
     await page.setViewportSize({ width, height: 1100 });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert(overflow <= 1, `Expected no horizontal overflow at ${width}px, got ${overflow}px.`);
   }
+  await page.setViewportSize({ width: 844, height: 390 });
+  const landscapeOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  assert(landscapeOverflow <= 1, `Expected no horizontal overflow in landscape phone layout, got ${landscapeOverflow}px.`);
 
   assert(errors.length === 0, `Unexpected console errors: ${errors.join('\n')}`);
   await browser.close();
