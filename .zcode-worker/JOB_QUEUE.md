@@ -9,6 +9,8 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 | 6 | WBNS-0006 | READY | ZCODE | Audio asset load and fallback reliability guard |
 | 7 | WBNS-0007 | READY | ZCODE | Playback node teardown and duplicate-session guard |
 | 8 | WBNS-0008 | READY | ZCODE | Offline/reload and unavailable-media recovery guard |
+| 9 | WBNS-0009 | READY | ZCODE | Keyboard media-control semantics guard |
+| 10 | WBNS-0010 | READY | ZCODE | Volume/mute persistence bounds guard |
 
 ## Active Jobs
 
