@@ -6,11 +6,9 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 
 | Priority | Job ID | Status | Agent | Description |
 |---:|---|---|---|---|
-| 1 | WBNS-0001 | READY | ZCODE | Audio context lifecycle and resume regression guard |
-| 2 | WBNS-0002 | READY | ZCODE | Output meter, clipping, mute, fade, and duck safety guard |
-| 3 | WBNS-0003 | READY | ZCODE | Session preset persistence and schema resilience guard |
-| 4 | WBNS-0004 | READY | ZCODE | Experience Mode accessibility and operator control guard |
-| 5 | WBNS-0005 | READY | ZCODE | Bowl sequence timing and cancellation determinism guard |
+| 6 | WBNS-0006 | READY | ZCODE | Audio asset load and fallback reliability guard |
+| 7 | WBNS-0007 | READY | ZCODE | Playback node teardown and duplicate-session guard |
+| 8 | WBNS-0008 | READY | ZCODE | Offline/reload and unavailable-media recovery guard |
 
 ## Active Jobs
 
@@ -18,7 +16,13 @@ None.
 
 ## Review Queue
 
-None.
+| Priority | Job ID | Status | Agent | Description |
+|---:|---|---|---|---|
+| 1 | WBNS-0001 | REVIEW | ZCODE | Worker-reported implementation already completed on local `main` ahead of `origin/main`; preserve as completed local evidence and do not reclaim until remote integration state is reconciled |
+| 2 | WBNS-0002 | REVIEW | ZCODE | Worker-reported implementation already completed on local `main` ahead of `origin/main`; preserve as completed local evidence and do not reclaim until remote integration state is reconciled |
+| 3 | WBNS-0003 | REVIEW | ZCODE | Worker-reported implementation already completed on local `main` ahead of `origin/main`; preserve as completed local evidence and do not reclaim until remote integration state is reconciled |
+| 4 | WBNS-0004 | REVIEW | ZCODE | Worker-reported implementation already completed on local `main` ahead of `origin/main`; preserve as completed local evidence and do not reclaim until remote integration state is reconciled |
+| 5 | WBNS-0005 | REVIEW | ZCODE | Worker-reported implementation already completed on local `main` ahead of `origin/main`; preserve as completed local evidence and do not reclaim until remote integration state is reconciled |
 
 ## Proposed / Waiting
 
