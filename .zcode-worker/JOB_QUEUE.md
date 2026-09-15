@@ -45,6 +45,6 @@ None.
 5. Never merge into `main`.
 6. Never deploy/release/publish.
 7. Successful autonomous work ends in REVIEW.
-8. Maintain at least **five unclaimed READY jobs** at all times whenever feasible.
+8. Maintain at least **six unclaimed READY jobs** at all times whenever feasible.
 9. New job claims are allowed only from 11:00 AM through 9:00 PM Eastern Time (`America/New_York`).
 10. Preserve client-side architecture, wellness-only claims, and licensed/original/synthetic audio boundaries.
