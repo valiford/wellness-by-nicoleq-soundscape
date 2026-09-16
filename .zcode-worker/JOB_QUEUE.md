@@ -6,13 +6,19 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 
 | Priority | Job ID | Status | Agent | Description |
 |---:|---|---|---|---|
-| 6 | WBNS-0006 | READY | ZCODE | Audio asset load and fallback reliability guard |
-| 7 | WBNS-0007 | READY | ZCODE | Playback node teardown and duplicate-session guard |
-| 8 | WBNS-0008 | READY | ZCODE | Offline/reload and unavailable-media recovery guard |
-| 9 | WBNS-0009 | READY | ZCODE | Keyboard media-control semantics guard |
-| 10 | WBNS-0010 | READY | ZCODE | Volume/mute persistence bounds guard |
-| 11 | WBNS-0011 | READY | ZCODE | Audio visibility/suspension recovery guard |
-| 12 | WBNS-0012 | READY | ZCODE | Session timer drift/backgrounding guard |
+| 1 | WBNS-0013 | READY | ZCODE | Smooth volume slider pointer/gesture control; eliminate jumpy track clicks and erratic drags |
+| 2 | WBNS-0014 | READY | ZCODE | Slider cross-browser latency/input regression lab for rapid scrubbing, resize, and touch behavior |
+| 3 | WBNS-0015 | READY | ZCODE | Mixer control visual affordance polish for premium, stable, touch-friendly controls |
+| 4 | WBNS-0016 | READY | ZCODE | Live mix value feedback and meter smoothing without changing authoritative audio values |
+| 5 | WBNS-0017 | READY | ZCODE | Mobile mixer ergonomics and gesture isolation between slider drag and page scroll |
+| 6 | WBNS-0018 | READY | ZCODE | Mixer state coalescing and persistence throttle to keep high-frequency interaction smooth |
+| 20 | WBNS-0006 | READY | ZCODE | Audio asset load and fallback reliability guard |
+| 21 | WBNS-0007 | READY | ZCODE | Playback node teardown and duplicate-session guard |
+| 22 | WBNS-0008 | READY | ZCODE | Offline/reload and unavailable-media recovery guard |
+| 23 | WBNS-0009 | READY | ZCODE | Keyboard media-control semantics guard |
+| 24 | WBNS-0010 | READY | ZCODE | Volume/mute persistence bounds guard |
+| 25 | WBNS-0011 | READY | ZCODE | Audio visibility/suspension recovery guard |
+| 26 | WBNS-0012 | READY | ZCODE | Session timer drift/backgrounding guard |
 
 ## Active Jobs
 
