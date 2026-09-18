@@ -6,6 +6,13 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 
 | Priority | Job ID | Status | Agent | Description |
 |---:|---|---|---|---|
+| 1 | WBNS-0019 | READY | ZCODE | Mixer preset scenes and local recall |
+| 2 | WBNS-0020 | READY | ZCODE | Keyboard and screen-reader mixer semantics |
+| 3 | WBNS-0021 | READY | ZCODE | Mobile audio unlock suspend and resume resilience |
+| 4 | WBNS-0022 | READY | ZCODE | Layer transition and crossfade smoothing |
+| 5 | WBNS-0023 | READY | ZCODE | Session timer persistence and recovery guard |
+| 6 | WBNS-0024 | READY | ZCODE | Audio asset integrity and decode fallback guard |
+| 7 | WBNS-0025 | READY | ZCODE | Long-session audio memory and CPU budget guard |
 | 1 | WBNS-0013 | READY | ZCODE | Smooth volume slider pointer/gesture control; eliminate jumpy track clicks and erratic drags |
 | 2 | WBNS-0014 | READY | ZCODE | Slider cross-browser latency/input regression lab for rapid scrubbing, resize, and touch behavior |
 | 3 | WBNS-0015 | READY | ZCODE | Mixer control visual affordance polish for premium, stable, touch-friendly controls |
