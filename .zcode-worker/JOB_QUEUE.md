@@ -6,6 +6,8 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 
 | Priority | Job ID | Status | Agent | Description |
 |---:|---|---|---|---|
+| 1 | WBNS-0033 | READY | ZCODE | Mixer state undo reset and accidental-change recovery |
+| 2 | WBNS-0034 | READY | ZCODE | Mobile Safari and Android Chrome audio-interruption regression pass |
 | 1 | WBNS-0026 | READY | ZCODE | Precision slider pointer and drag stability pass |
 | 2 | WBNS-0027 | READY | ZCODE | Mobile slider versus page-scroll gesture isolation |
 | 3 | WBNS-0028 | READY | ZCODE | Keyboard screen-reader and value-feedback mixer polish |
