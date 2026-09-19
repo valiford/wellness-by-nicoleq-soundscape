@@ -6,6 +6,13 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 
 | Priority | Job ID | Status | Agent | Description |
 |---:|---|---|---|---|
+| 1 | WBNS-0026 | READY | ZCODE | Precision slider pointer and drag stability pass |
+| 2 | WBNS-0027 | READY | ZCODE | Mobile slider versus page-scroll gesture isolation |
+| 3 | WBNS-0028 | READY | ZCODE | Keyboard screen-reader and value-feedback mixer polish |
+| 4 | WBNS-0029 | READY | ZCODE | Local mixer preset scenes and safe recall |
+| 5 | WBNS-0030 | READY | ZCODE | Layer crossfade and transition smoothing |
+| 6 | WBNS-0031 | READY | ZCODE | Session timer background and recovery hardening |
+| 7 | WBNS-0032 | READY | ZCODE | Long-session audio performance and accessibility gate |
 | 1 | WBNS-0019 | READY | ZCODE | Mixer preset scenes and local recall |
 | 2 | WBNS-0020 | READY | ZCODE | Keyboard and screen-reader mixer semantics |
 | 3 | WBNS-0021 | READY | ZCODE | Mobile audio unlock suspend and resume resilience |
