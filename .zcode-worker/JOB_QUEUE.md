@@ -6,6 +6,14 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 
 | Priority | Job ID | Status | Agent | Description |
 |---:|---|---|---|---|
+| 1 | WBNS-0041 | READY | ZCODE | Precision mixer pointer touch and track-click behavior consolidation |
+| 2 | WBNS-0042 | READY | ZCODE | Mobile page-scroll and slider gesture isolation |
+| 3 | WBNS-0043 | READY | ZCODE | Preset scenes undo reset and local recovery workflow |
+| 4 | WBNS-0044 | READY | ZCODE | Crossfade gain-ramp mute and transition smoothing |
+| 5 | WBNS-0045 | READY | ZCODE | Audio interruption background resume and timer continuity |
+| 6 | WBNS-0046 | READY | ZCODE | Keyboard screen-reader focus and value-feedback accessibility |
+| 7 | WBNS-0047 | READY | ZCODE | Long-session audio memory CPU and node-lifecycle soak |
+| 8 | WBNS-0048 | READY | ZCODE | Soundscape responsive reduced-motion and mobile-browser release gate |
 | 1 | WBNS-0035 | READY | ZCODE | Precision mixer gesture and pointer-capture consolidation |
 | 2 | WBNS-0036 | READY | ZCODE | Mixer presets undo reset and recovery workflow |
 | 3 | WBNS-0037 | READY | ZCODE | Audio interruption background resume and timer continuity |
