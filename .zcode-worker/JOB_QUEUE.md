@@ -6,6 +6,9 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 
 | Priority | Job ID | Status | Agent | Description |
 |---:|---|---|---|---|
+| 1 | WBNS-0057 | READY | ZCODE | Mixer precision and mobile gesture release pass |
+| 2 | WBNS-0058 | READY | ZCODE | Preset timer and interruption recovery consolidation |
+| 3 | WBNS-0059 | READY | ZCODE | Audio accessibility and long-session stability gate |
 | 1 | WBNS-0049 | READY | ZCODE | Mixer slider and gesture interaction consolidation |
 | 2 | WBNS-0050 | READY | ZCODE | Preset undo reset and accidental-change recovery workflow |
 | 3 | WBNS-0051 | READY | ZCODE | Mobile audio interruption and resume hardening |
