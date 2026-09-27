@@ -6,6 +6,13 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 
 | Priority | Job ID | Status | Agent | Description |
 |---:|---|---|---|---|
+| 1 | WBNS-0060 | READY | ZCODE | Mobile mixer layout and gesture completion |
+| 2 | WBNS-0061 | READY | ZCODE | Preset create, save, load, and recovery |
+| 3 | WBNS-0062 | READY | ZCODE | Session timer, fade-out, and sleep continuity |
+| 4 | WBNS-0063 | READY | ZCODE | Audio interruption, route change, and resume |
+| 5 | WBNS-0064 | READY | ZCODE | Audio engine crossfade and node lifecycle |
+| 6 | WBNS-0065 | READY | ZCODE | Soundscape accessibility and feedback |
+| 7 | WBNS-0066 | READY | ZCODE | Soundscape release acceptance and soak |
 | 1 | WBNS-0057 | READY | ZCODE | Mixer precision and mobile gesture release pass |
 | 2 | WBNS-0058 | READY | ZCODE | Preset timer and interruption recovery consolidation |
 | 3 | WBNS-0059 | READY | ZCODE | Audio accessibility and long-session stability gate |
