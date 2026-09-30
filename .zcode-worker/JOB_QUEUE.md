@@ -2,6 +2,20 @@
 
 The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGIBLE: true` may be claimed by the scheduled ZCode worker.
 
+## Ready Queue — 2026-09-30 fresh soundscape product wave
+
+> Reconciled against current branch leases on 2026-09-30. These seven existing jobs are today's preferred runnable wave; no filler jobs were added.
+
+| Priority | Job ID | Status | Agent | Description |
+|---:|---|---|---|---|
+| 1 | WBNS-0060 | READY | ZCODE | Mobile mixer layout and gesture completion |
+| 2 | WBNS-0061 | READY | ZCODE | Preset create, save, load, and recovery |
+| 3 | WBNS-0062 | READY | ZCODE | Session timer, fade-out, and sleep continuity |
+| 4 | WBNS-0063 | READY | ZCODE | Audio interruption, route change, and resume |
+| 5 | WBNS-0064 | READY | ZCODE | Audio engine crossfade and node lifecycle |
+| 6 | WBNS-0065 | READY | ZCODE | Soundscape accessibility and feedback |
+| 7 | WBNS-0066 | READY | ZCODE | Soundscape release acceptance and soak |
+
 ## Ready Queue
 
 | Priority | Job ID | Status | Agent | Description |
