@@ -2,6 +2,29 @@
 
 The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGIBLE: true` may be claimed by the scheduled ZCode worker.
 
+## Owner Execution Directive — 2026-10-01 product-progress gate
+
+> **This section overrides the lower READY tables for new claims on 2026-10-01.** Existing branch/worktree leases remain authoritative and continue under their current job contracts. Do **not** create or replenish jobs merely to maintain a queue reserve.
+>
+> New claims on 2026-10-01 may come **only** from rows marked **OPEN** below. **LEASED** rows must never be duplicated. **GATED** rows are staged but are not claimable until a controller/reviewer explicitly reopens them after a checkpoint. Historical READY rows outside this table are not claimable on 2026-10-01.
+>
+> **Checkpoint rule:** after three jobs in this workstream newly reach REVIEW/COMPLETE during the 2026-10-01 run (or sooner if a critical integration conflict appears), stop new claims and reassess current `origin/main`, merged PRs, reachable reports, and the runnable product. Release more work only when the completed tranche produced a visible user/operator capability, closed a critical integration gap, or fixed a demonstrated reliability defect. Do not reward PR count. Slot 10 is reserve work only.
+>
+> If fewer than three rows are OPEN, that is intentional: active leases or dependency/integration risk make backfilling with older READY work counterproductive.
+
+| Slot | Job ID | Lane | Release | Intended outcome |
+|---:|---|---|---|---|
+| 1 | WBNS-0060 | Product | OPEN | Finish the mobile mixer layout and gestures. |
+| 2 | WBNS-0061 | Product | OPEN | Finish preset create/save/load/recovery. |
+| 3 | WBNS-0062 | Product | OPEN | Finish session timer, fade-out, and sleep continuity. |
+| 4 | WBNS-0064 | Product | GATED | Improve audio-engine crossfade and node lifecycle after the first checkpoint. |
+| 5 | WBNS-0063 | Integration | GATED | Integrate interruption, route-change, and resume behavior. |
+| 6 | WBNS-0058 | Integration | GATED | Consolidate preset/timer/interruption recovery only if still needed after current product work. |
+| 7 | WBNS-0059 | Reliability | GATED | Run long-session stability/performance protection around the completed flows. |
+| 8 | WBNS-0066 | Reliability | GATED | Run release acceptance and soak. |
+| 9 | WBNS-0065 | UX | GATED | Finish accessibility and live feedback. |
+| 10 | WBNS-0057 | Reserve | GATED | Use the older mixer-precision pass only if the new mobile mixer work exposes a real remaining defect. |
+
 ## Ready Queue — 2026-09-30 fresh soundscape product wave
 
 > Reconciled against current branch leases on 2026-09-30. These seven existing jobs are today's preferred runnable wave; no filler jobs were added.
