@@ -2,28 +2,26 @@
 
 The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGIBLE: true` may be claimed by the scheduled ZCode worker.
 
-## Owner Execution Directive — 2026-10-01 product-progress gate
+## Owner Execution Wave — 2026-10-02: 10 real jobs
 
-> **This section overrides the lower READY tables for new claims on 2026-10-01.** Existing branch/worktree leases remain authoritative and continue under their current job contracts. Do **not** create or replenish jobs merely to maintain a queue reserve.
+> **This is the authoritative execution order until the next controller reconciliation.** It replaces the 2026-10-01 execution directive. Work already completed on a worker branch is moved to the top instead of being hidden behind fresh READY rows.
 >
-> New claims on 2026-10-01 may come **only** from rows marked **OPEN** below. **LEASED** rows must never be duplicated. **GATED** rows are staged but are not claimable until a controller/reviewer explicitly reopens them after a checkpoint. Historical READY rows outside this table are not claimable on 2026-10-01.
+> Workers may claim **only READY rows in this table**. REVIEW rows are complete engineering deliveries awaiting review/integration; CLAIMED rows retain their branch/worktree lease; PROPOSED rows are dependency- or approval-gated. Do not fall through into older READY tables and do not create filler merely to keep workers busy.
 >
-> **Checkpoint rule:** after three jobs in this workstream newly reach REVIEW/COMPLETE during the 2026-10-01 run (or sooner if a critical integration conflict appears), stop new claims and reassess current `origin/main`, merged PRs, reachable reports, and the runnable product. Release more work only when the completed tranche produced a visible user/operator capability, closed a critical integration gap, or fixed a demonstrated reliability defect. Do not reward PR count. Slot 10 is reserve work only.
->
-> If fewer than three rows are OPEN, that is intentional: active leases or dependency/integration risk make backfilling with older READY work counterproductive.
+> After any three additional jobs newly reach REVIEW/COMPLETE, reassess current `origin/main`, branch/PR/report evidence, and the runnable product before releasing more work. Prioritize integration and visible product outcomes over PR count.
 
-| Slot | Job ID | Lane | Release | Intended outcome |
+| Priority | Job ID | State | Lane | Next outcome |
 |---:|---|---|---|---|
-| 1 | WBNS-0060 | Product | OPEN | Finish the mobile mixer layout and gestures. |
-| 2 | WBNS-0061 | Product | OPEN | Finish preset create/save/load/recovery. |
-| 3 | WBNS-0062 | Product | OPEN | Finish session timer, fade-out, and sleep continuity. |
-| 4 | WBNS-0064 | Product | GATED | Improve audio-engine crossfade and node lifecycle after the first checkpoint. |
-| 5 | WBNS-0063 | Integration | GATED | Integrate interruption, route-change, and resume behavior. |
-| 6 | WBNS-0058 | Integration | GATED | Consolidate preset/timer/interruption recovery only if still needed after current product work. |
-| 7 | WBNS-0059 | Reliability | GATED | Run long-session stability/performance protection around the completed flows. |
-| 8 | WBNS-0066 | Reliability | GATED | Run release acceptance and soak. |
-| 9 | WBNS-0065 | UX | GATED | Finish accessibility and live feedback. |
-| 10 | WBNS-0057 | Reserve | GATED | Use the older mixer-precision pass only if the new mobile mixer work exposes a real remaining defect. |
+| 1 | WBNS-0060 | READY | Product | Finish mobile mixer layout and gesture behavior. |
+| 2 | WBNS-0061 | READY | Product | Finish preset create/save/load and recovery. |
+| 3 | WBNS-0062 | READY | Product | Finish session timer, fade-out, and sleep continuity. |
+| 4 | WBNS-0063 | READY | Integration | Handle audio interruption, route change, and resume. |
+| 5 | WBNS-0064 | READY | Audio | Improve crossfade quality and audio-node lifecycle. |
+| 6 | WBNS-0065 | READY | UX | Finish accessibility and facilitator feedback. |
+| 7 | WBNS-0067 | READY | Product | Add master output metering and bounded clipping/overload alerts. |
+| 8 | WBNS-0068 | READY | Product | Add one-click facilitator duck control with exact safe restore. |
+| 9 | WBNS-0069 | READY | Operations | Add Zoom/second-device transmission acceptance and facilitator level guide. |
+| 10 | WBNS-0066 | READY | Reliability | Run release acceptance and long-session soak after the product changes above. |
 
 ## Ready Queue — 2026-09-30 fresh soundscape product wave
 
