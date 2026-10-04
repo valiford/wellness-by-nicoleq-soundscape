@@ -2,7 +2,39 @@
 
 The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGIBLE: true` may be claimed by the scheduled ZCode worker.
 
-## Owner Execution Wave — 2026-10-02: 10 real jobs
+
+## Owner Execution Wave — 2026-10-04 reload
+
+> **Authoritative selection table.** This owner-authorized restock supersedes every earlier execution/READY table below. Claim only READY jobs in this table, with full-spec dependencies satisfied and no local/remote branch/worktree lease. Historical tables never provide fallback authorization.
+>
+> Audited origin/main: `ae4397e2372a310a5ae2c316b476a20546531217`. This remote audit observed GitHub branches and PRs; local worktrees/processes and live deployment state were not observed. Recheck ownership at claim time. After three additional jobs reach REVIEW, refresh main and review delivery evidence before proceeding. Numeric reserve is conditional on useful independent work; do not create duplicates or bypass dependency gates.
+>
+> Full worker prompt: [worker-2026-10-04.md](prompts/worker-2026-10-04.md) · Reload evidence: [reload-2026-10-04.md](reports/reload-2026-10-04.md).
+
+| Priority | Job ID | Status | Agent | Description |
+|---:|---|---|---|---|
+| 1 | WBNS-0070 | READY | ZCODE | Facilitator setlist and timed cue sequence |
+| 2 | WBNS-0071 | READY | ZCODE | Facilitator keyboard and cue-card control surface |
+| 3 | WBNS-0072 | READY | ZCODE | Audio source readiness and session preflight |
+| 10 | WBNS-0060 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+| 11 | WBNS-0061 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+| 12 | WBNS-0062 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+| 13 | WBNS-0063 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+| 14 | WBNS-0064 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+| 15 | WBNS-0065 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+| 16 | WBNS-0067 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+| 17 | WBNS-0068 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+| 18 | WBNS-0069 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+| 19 | WBNS-0066 | READY | ZCODE | Existing approved scope; inspect full spec and local leases before claim |
+
+### Existing delivery ledger — remote reconciliation
+
+| Job ID | Prior state | Observed state | Evidence |
+|---|---|---|---|
+
+
+
+## Historical Owner Execution Wave — 2026-10-02: 10 real jobs
 
 > **This is the authoritative execution order until the next controller reconciliation.** It replaces the 2026-10-01 execution directive. Work already completed on a worker branch is moved to the top instead of being hidden behind fresh READY rows.
 >
@@ -23,7 +55,7 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 | 9 | WBNS-0069 | READY | Operations | Add Zoom/second-device transmission acceptance and facilitator level guide. |
 | 10 | WBNS-0066 | READY | Reliability | Run release acceptance and long-session soak after the product changes above. |
 
-## Ready Queue — 2026-09-30 fresh soundscape product wave
+## Historical Ready Queue — 2026-09-30 fresh soundscape product wave
 
 > Reconciled against current branch leases on 2026-09-30. These seven existing jobs are today's preferred runnable wave; no filler jobs were added.
 
@@ -37,7 +69,7 @@ The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGI
 | 6 | WBNS-0065 | READY | ZCODE | Soundscape accessibility and feedback |
 | 7 | WBNS-0066 | READY | ZCODE | Soundscape release acceptance and soak |
 
-## Ready Queue
+## Historical Ready Queue
 
 | Priority | Job ID | Status | Agent | Description |
 |---:|---|---|---|---|
