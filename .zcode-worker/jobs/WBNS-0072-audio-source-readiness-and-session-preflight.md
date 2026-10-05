@@ -4,10 +4,10 @@ STATUS: READY
 AGENT: ZCODE
 AUTOMATION_ELIGIBLE: true
 BASE: origin/main
-PRIORITY: 3
-WAVE: 2026-10-04
+PRIORITY: 7
+WAVE: 2026-10-05 (reconciled; original assignment 2026-10-04)
 DEPENDENCIES: none; implement only against current main or immutable committed source evidence verified below
-AUDITED_MAIN: ae4397e2372a310a5ae2c316b476a20546531217
+AUDITED_MAIN: bf0119a64dcb7a642efe800ff9be9f4b92738f49
 
 ## Objective and user-visible outcome
 
@@ -17,7 +17,7 @@ Deliver the complete bounded outcome, including its usable interface or runnable
 
 ## Scope and implementation contract
 
-1. Fetch origin, read `.zcode-worker/JOB_QUEUE.md`, `.zcode-worker/ZCODE_WORKER.md`, applicable AGENTS.md and current canonical project docs from origin/main. The 2026-10-04 execution wave controls selection; historical tables are lineage only.
+1. Fetch origin, read `.zcode-worker/JOB_QUEUE.md`, `.zcode-worker/ZCODE_WORKER.md`, applicable AGENTS.md and current canonical project docs from origin/main. The 2026-10-05 execution wave controls selection; historical tables are lineage only.
 2. Check local and remote branches, worktrees, open PRs and matching source reports. Existing leases remain owned. Work from one fresh isolated branch/worktree named for WBNS-0072; never enter, reset, rebase, stash, delete or take over another session's worktree.
 3. Record exact base and source SHAs. For convergence jobs, use immutable committed snapshots only after confirming permitted source access; preserve original branches and reports. Build an additive carrier with a file/behavior disposition ledger. Do not declare squash-merged work absent merely because commit ancestry differs.
 4. Reproduce the target gap using safe fixtures or the current local product. Establish concrete before/after behavior and the smallest coherent implementation. Keep changes within this assignment.

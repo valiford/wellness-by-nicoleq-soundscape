@@ -1,11 +1,51 @@
 # WBNQ Soundscape — ZCode Engineering Job Queue
 
+Origin/main is the authoritative control plane. Branch/worktree existence is lease authority. Only the newest table supplies candidate work.
+
+## Owner Execution Wave — 2026-10-05 reconciliation and reload
+
+> **Authoritative selection table.** This owner-authorized reconciliation supersedes every earlier execution/READY table. Claim only READY rows here with eligible full specs, satisfied dependencies and no local/remote lease. Historical tables are nonclaimable lineage; never fall back to historical READY labels.
+>
+> Audited origin/main: `bf0119a64dcb7a642efe800ff9be9f4b92738f49`. Timestamp: 2026-10-05T22:55:05Z. Remote GitHub branches, PRs, reports and accepted-main ancestry were inspected. Local Windows worktrees/processes and production state were not observed; recheck ownership at claim time. Existing REVIEW/CLAIMED/RUNNING/ACTIVE leases remain intact. Source carriers do not acquire source leases.
+>
+> **13 READY candidates**, subject to claim-time checks. Numeric reserve is conditional on useful work: this owner-authorized bounded reload permits claiming candidates even below the usual reserve target. Never invent filler or release gates for depth. Refresh main after each handoff and seek controller reconciliation after three additional REVIEW deliveries.
+>
+> Full worker prompt: [worker-2026-10-05.md](prompts/worker-2026-10-05.md) · Evidence: [reconcile-2026-10-05.md](reports/reconcile-2026-10-05.md).
+
+| Priority | Job ID | Status | Agent | Description |
+|---:|---|---|---|---|
+| 1 | WBNS-0060 | READY | ZCODE | [Mobile mixer layout and gesture completion](jobs/WBNS-0060-mobile-mixer-layout-and-gesture-completion.md) |
+| 2 | WBNS-0061 | READY | ZCODE | [Preset create, save, load, and recovery](jobs/WBNS-0061-preset-create-save-load-and-recovery.md) |
+| 3 | WBNS-0062 | READY | ZCODE | [Session timer, fade-out, and sleep continuity](jobs/WBNS-0062-session-timer-fadeout-and-sleep-continuity.md) |
+| 4 | WBNS-0063 | READY | ZCODE | [Audio interruption, route change, and resume](jobs/WBNS-0063-audio-interruption-route-and-resume.md) |
+| 5 | WBNS-0064 | READY | ZCODE | [Audio engine crossfade and node lifecycle](jobs/WBNS-0064-audio-engine-crossfade-and-node-lifecycle.md) |
+| 6 | WBNS-0065 | READY | ZCODE | [Soundscape accessibility and feedback](jobs/WBNS-0065-soundscape-accessibility-and-feedback.md) |
+| 7 | WBNS-0072 | READY | ZCODE | [Audio source readiness and session preflight](jobs/WBNS-0072-audio-source-readiness-and-session-preflight.md) |
+| 8 | WBNS-0070 | READY | ZCODE | [Facilitator setlist and timed cue sequence](jobs/WBNS-0070-facilitator-setlist-and-timed-cue-sequence.md) |
+| 9 | WBNS-0071 | READY | ZCODE | [Facilitator keyboard and cue-card control surface](jobs/WBNS-0071-facilitator-keyboard-and-cue-card-control-surface.md) |
+| 10 | WBNS-0067 | READY | ZCODE | [Output level metering and clipping alerts](jobs/WBNS-0067-output-metering-and-clipping-alerts.md) |
+| 11 | WBNS-0068 | READY | ZCODE | [One-click facilitator duck control with safe restore](jobs/WBNS-0068-one-click-duck-control.md) |
+| 12 | WBNS-0069 | READY | ZCODE | [Zoom transmission acceptance and facilitator level guide](jobs/WBNS-0069-zoom-transmission-acceptance-and-level-guide.md) |
+| 13 | WBNS-0066 | READY | ZCODE | [Soundscape release acceptance and soak](jobs/WBNS-0066-soundscape-release-acceptance-and-soak.md) |
+
+### Delivery and ownership ledger — current reconciliation
+
+| Job ID | Previous state | Reconciled state | Evidence |
+|---|---|---|---|
+
+
+## Historical snapshots — nonclaimable
+
+Prior definitions and observations below never override the October 5 table/current specs. All prior selection instructions are superseded.
+
+### WBNQ Soundscape — ZCode Engineering Job Queue
+
 The highest-priority READY job with satisfied dependencies and `AUTOMATION_ELIGIBLE: true` may be claimed by the scheduled ZCode worker.
 
 
-## Owner Execution Wave — 2026-10-04 reload
+### Superseded execution wave — 2026-10-04 reload
 
-> **Authoritative selection table.** This owner-authorized restock supersedes every earlier execution/READY table below. Claim only READY jobs in this table, with full-spec dependencies satisfied and no local/remote branch/worktree lease. Historical tables never provide fallback authorization.
+> **Superseded selection table; nonclaimable.** This owner-authorized restock supersedes every earlier execution/READY table below. Claim only READY jobs in this table, with full-spec dependencies satisfied and no local/remote branch/worktree lease. Historical tables never provide fallback authorization.
 >
 > Audited origin/main: `ae4397e2372a310a5ae2c316b476a20546531217`. This remote audit observed GitHub branches and PRs; local worktrees/processes and live deployment state were not observed. Recheck ownership at claim time. After three additional jobs reach REVIEW, refresh main and review delivery evidence before proceeding. Numeric reserve is conditional on useful independent work; do not create duplicates or bypass dependency gates.
 >

@@ -12,6 +12,8 @@
 10. Preserve the app's client-side wellness positioning and audio provenance/safety boundaries.
 
 
-## Owner reload selection rule — 2026-10-04
+## Owner reload selection rule — 2026-10-05
 
-Only the newest non-superseded Owner Execution Wave table in `.zcode-worker/JOB_QUEUE.md` authorizes selection. Historical READY/execution tables are lineage, never fallback. Read `.zcode-worker/prompts/worker-2026-10-04.md` and the full job specification before claiming. Local/remote leases and accepted dependencies remain mandatory; this remote restock cannot certify unseen local ownership. Numeric reserve is conditional on useful independent work; this owner-authorized bounded wave must not be inflated with filler. All existing worker safety, scope, time-window, publishing and review rules remain in force.
+Only the newest non-superseded Owner Execution Wave table in `.zcode-worker/JOB_QUEUE.md` authorizes selection. Historical READY/execution tables are lineage, never fallback. Read `.zcode-worker/prompts/worker-2026-10-05.md` and the full job specification before claiming. Local/remote leases and accepted dependencies remain mandatory; this remote restock cannot certify unseen local ownership. Numeric reserve is conditional on useful independent work; this owner-authorized bounded wave must not be inflated with filler. All existing worker safety, scope, time-window, publishing and review rules remain in force.
+
+The October 5 bounded READY candidates may be claimed below the normal reserve target. No filler or gated promotion is required. Source integration jobs read frozen committed evidence in their own isolated worktree; source leases and source-worktree access remain excluded.
